@@ -8,7 +8,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "verbatimModuleSyntax": true,
     "strict": true,
     "skipLibCheck": true,
