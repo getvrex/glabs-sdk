@@ -1,0 +1,18 @@
+# Source files (dist is published via files field)
+src/
+*.ts
+!*.d.ts
+
+# Config
+tsconfig.json
+tsup.config.ts
+.claude/
+.github/
+
+# Project files
+plans/
+docs/
+*.tgz
+
+# Environment
+.env*
