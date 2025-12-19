@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/getvrex/glabs-sdk/compare/v1.0.0...v1.0.1) (2025-12-19)
+
+
+### Bug Fixes
+
+* add author field ([a182962](https://github.com/getvrex/glabs-sdk/commit/a182962fcdb034cee3fa6d014812c92f9e24ec7c))
+
 ## 1.0.0 (2025-12-19)
 
 
