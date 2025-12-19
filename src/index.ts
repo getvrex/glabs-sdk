@@ -1,11 +1,11 @@
 /**
- * @vrex/glabs-sdk
+ * @getvrex/glabs-sdk
  *
  * TypeScript SDK for Google Labs AI media generation APIs.
  *
  * @example
  * ```typescript
- * import { GLabsClient } from '@vrex/glabs-sdk';
+ * import { GLabsClient } from '@getvrex/glabs-sdk';
  *
  * const client = new GLabsClient({
  *   bearerToken: 'your-token',

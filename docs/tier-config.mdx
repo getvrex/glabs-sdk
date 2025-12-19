@@ -31,7 +31,7 @@ import {
   getVideoApiConfig,
   getImageApiConfig,
   isFeatureSupported,
-} from '@vrex/glabs-sdk';
+} from '@getvrex/glabs-sdk';
 ```
 
 ### Get Tier Capabilities
@@ -183,7 +183,7 @@ All tiers use `veo_2_1080p_upsampler_8s` for HD upscaling.
 ### getVideoAspectRatioEnum
 
 ```typescript
-import { getVideoAspectRatioEnum } from '@vrex/glabs-sdk';
+import { getVideoAspectRatioEnum } from '@getvrex/glabs-sdk';
 
 getVideoAspectRatioEnum('16:9'); // 'VIDEO_ASPECT_RATIO_LANDSCAPE'
 getVideoAspectRatioEnum('9:16'); // 'VIDEO_ASPECT_RATIO_PORTRAIT'
@@ -193,7 +193,7 @@ getVideoAspectRatioEnum('1:1');  // 'VIDEO_ASPECT_RATIO_SQUARE'
 ### getImageAspectRatioEnum
 
 ```typescript
-import { getImageAspectRatioEnum } from '@vrex/glabs-sdk';
+import { getImageAspectRatioEnum } from '@getvrex/glabs-sdk';
 
 getImageAspectRatioEnum('16:9'); // 'IMAGE_ASPECT_RATIO_LANDSCAPE'
 getImageAspectRatioEnum('9:16'); // 'IMAGE_ASPECT_RATIO_PORTRAIT'
@@ -203,7 +203,7 @@ getImageAspectRatioEnum('1:1');  // 'IMAGE_ASPECT_RATIO_SQUARE'
 ### getVideoModelKey
 
 ```typescript
-import { getVideoModelKey } from '@vrex/glabs-sdk';
+import { getVideoModelKey } from '@getvrex/glabs-sdk';
 
 getVideoModelKey('text-to-video', 'pro', '16:9', 'fast');
 // Returns: 'veo_3_1_t2v_fast_ultra'

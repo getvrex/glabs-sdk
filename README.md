@@ -1,24 +1,24 @@
-# @vrex/glabs-sdk
+# @getvrex/glabs-sdk
 
 TypeScript SDK for Google Labs AI media generation APIs (Imagen, Veo).
 
 ## Installation
 
 ```bash
-npm install @vrex/glabs-sdk
+npm install @getvrex/glabs-sdk
 ```
 
 **Note:** This is a private package. Configure your `.npmrc`:
 
 ```
-@vrex:registry=https://npm.pkg.github.com
+@getvrex:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
 ## Quick Start
 
 ```typescript
-import { GLabsClient } from '@vrex/glabs-sdk';
+import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
   bearerToken: 'your-token',
@@ -102,13 +102,13 @@ import type {
   GenerateImageOptions,
   GenerateTextToVideoOptions,
   VideoStatusResult,
-} from '@vrex/glabs-sdk/types';
+} from '@getvrex/glabs-sdk/types';
 ```
 
 ## Error Handling
 
 ```typescript
-import { GLabsError } from '@vrex/glabs-sdk';
+import { GLabsError } from '@getvrex/glabs-sdk';
 
 try {
   await client.images.generate({ ... });

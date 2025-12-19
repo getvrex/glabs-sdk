@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@vrex/glabs-sdk",
+      "name": "@getvrex/glabs-sdk",
       "devDependencies": {
         "tsup": "^8.5.0",
         "typescript": "^5",

@@ -5,7 +5,7 @@
  *
  * @example
  * ```typescript
- * import { GLabsClient } from '@vrex/glabs-sdk';
+ * import { GLabsClient } from '@getvrex/glabs-sdk';
  *
  * const client = new GLabsClient({
  *   bearerToken: 'your-token',

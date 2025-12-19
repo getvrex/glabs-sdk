@@ -13,16 +13,16 @@ Install the package using your preferred package manager:
 
 ```bash
 # Using bun
-bun add @vrex/glabs-sdk
+bun add @getvrex/glabs-sdk
 
 # Using npm
-npm install @vrex/glabs-sdk
+npm install @getvrex/glabs-sdk
 
 # Using pnpm
-pnpm add @vrex/glabs-sdk
+pnpm add @getvrex/glabs-sdk
 
 # Using yarn
-yarn add @vrex/glabs-sdk
+yarn add @getvrex/glabs-sdk
 ```
 
 ## Prerequisites
@@ -36,7 +36,7 @@ Before using the SDK, you'll need:
 ## Basic Setup
 
 ```typescript
-import { GLabsClient } from '@vrex/glabs-sdk';
+import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
   // Required: Your authentication token
@@ -75,7 +75,7 @@ RECAPTCHA_PROVIDER=yescaptcha
 ```
 
 ```typescript
-import { GLabsClient } from '@vrex/glabs-sdk';
+import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
@@ -107,7 +107,7 @@ const sessionId = randomUUID();
 The SDK throws `GLabsError` for API errors:
 
 ```typescript
-import { GLabsClient, GLabsError } from '@vrex/glabs-sdk';
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
 
 try {
   const result = await client.images.generate({

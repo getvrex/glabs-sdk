@@ -1,5 +1,5 @@
 /**
- * @vrex/glabs-sdk - Type exports
+ * @getvrex/glabs-sdk - Type exports
  *
  * All public types are exported from this file for external use.
  */

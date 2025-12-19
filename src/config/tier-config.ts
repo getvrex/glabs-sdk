@@ -7,7 +7,7 @@
  * 3. When adding new features, only add config in this file
  *
  * @example
- * import { getVideoApiConfig } from '@vrex/glabs-sdk';
+ * import { getVideoApiConfig } from '@getvrex/glabs-sdk';
  * const config = getVideoApiConfig('text-to-video', 'pro', '16:9', 'fast');
  */
 
