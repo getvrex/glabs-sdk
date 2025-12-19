@@ -39,6 +39,7 @@
     "imagen"
   ],
   "license": "MIT",
+  "author": "Vrex <support@getvrex.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/getvrex/glabs-sdk"
