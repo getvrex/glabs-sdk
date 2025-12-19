@@ -1,0 +1,13 @@
+{
+  "title": "GLabs SDK",
+  "pages": [
+    "index",
+    "getting-started",
+    "client",
+    "image-generation",
+    "video-generation",
+    "recaptcha",
+    "tier-config",
+    "api-reference"
+  ]
+}

@@ -1,0 +1,189 @@
+---
+title: reCAPTCHA Configuration
+description: Configure reCAPTCHA providers for video generation
+---
+
+# reCAPTCHA Configuration
+
+Both image and video generation require reCAPTCHA verification. The SDK supports two providers: **YesCaptcha** and **CapSolver**.
+
+## Why reCAPTCHA?
+
+Google Labs uses reCAPTCHA v3 Enterprise to protect against abuse. The SDK handles this transparently:
+
+1. All generation requests require a reCAPTCHA token
+2. SDK automatically fetches a token before each request
+3. If token evaluation fails, SDK retries with a new token (up to 3 attempts)
+
+## Supported Providers
+
+### YesCaptcha
+
+[YesCaptcha](https://yescaptcha.com) is a captcha solving service.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'yescaptcha',
+    apiKey: 'your-yescaptcha-client-key',
+    maxRetries: 20, // Optional: max polling attempts (default: 20)
+  },
+});
+```
+
+### CapSolver
+
+[CapSolver](https://capsolver.com) is another captcha solving service with proxy support.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'capsolver',
+    apiKey: 'your-capsolver-api-key',
+    proxy: 'http://user:pass@ip:port', // Optional: residential proxy
+    maxRetries: 30, // Optional: max polling attempts (default: 30)
+  },
+});
+```
+
+## Configuration Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `provider` | `'yescaptcha' \| 'capsolver'` | Yes | The captcha solving service to use |
+| `apiKey` | `string` | Yes | API key for the provider |
+| `proxy` | `string` | No | Proxy URL (CapSolver only) |
+| `maxRetries` | `number` | No | Maximum polling attempts |
+
+## How It Works
+
+### Token Request Flow
+
+1. SDK creates a task with the provider
+2. Provider solves the reCAPTCHA challenge
+3. SDK polls for the result
+4. Token is included in API requests
+
+### YesCaptcha Flow
+
+```
+SDK -> YesCaptcha: createTask (RecaptchaV3TaskProxylessM1S7)
+YesCaptcha -> SDK: taskId
+SDK -> YesCaptcha: getTaskResult (polling every 3s)
+YesCaptcha -> SDK: { gRecaptchaResponse: "token" }
+```
+
+### CapSolver Flow
+
+```
+SDK -> CapSolver: createTask (ReCaptchaV3EnterpriseTask)
+CapSolver -> SDK: taskId
+SDK -> CapSolver: getTaskResult (polling every 2s)
+CapSolver -> SDK: { gRecaptchaResponse: "token", userAgent, secChUa }
+```
+
+## Browser Fingerprint
+
+CapSolver provides additional browser fingerprint data:
+
+- `userAgent`: Browser user agent string
+- `secChUa`: Sec-CH-UA header value
+
+The SDK automatically includes these headers in requests when available, improving success rates.
+
+## Using Proxies (CapSolver)
+
+For better success rates, CapSolver supports residential proxies:
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'capsolver',
+    apiKey: 'your-api-key',
+    proxy: 'http://username:password@proxy.example.com:8080',
+  },
+});
+```
+
+**Proxy formats:**
+- HTTP: `http://user:pass@ip:port`
+- SOCKS5: `socks5://user:pass@ip:port`
+
+## Automatic Retry on Evaluation Failure
+
+Sometimes reCAPTCHA tokens are rejected by Google with "reCAPTCHA evaluation failed". The SDK automatically handles this by:
+
+1. Detecting the evaluation failure response
+2. Requesting a new token from your provider
+3. Retrying the request (up to 3 attempts by default)
+
+This is controlled by the `RECAPTCHA_EVAL_MAX_RETRIES` constant (default: 3).
+
+```
+[Image] Fetching reCAPTCHA token (attempt 1/3)...
+[Image] reCAPTCHA token obtained, generating...
+[Image] reCAPTCHA evaluation failed (attempt 1/3), retrying with new token...
+[Image] Fetching reCAPTCHA token (attempt 2/3)...
+[Image] reCAPTCHA token obtained, generating...
+✓ Success
+```
+
+## Without reCAPTCHA
+
+Both image and video generation require reCAPTCHA configuration. Without it, requests will fail immediately:
+
+```typescript
+// This will throw immediately
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  // No recaptcha config - ERROR!
+});
+
+await client.images.generate({...});
+// Error: reCAPTCHA configuration is required for image generation
+
+await client.videos.generateTextToVideo({...});
+// Error: reCAPTCHA configuration is required for video generation
+```
+
+## Error Handling
+
+```typescript
+import { GLabsError } from '@vrex/glabs-sdk';
+
+try {
+  await client.videos.generateTextToVideo({...});
+} catch (error) {
+  if (error instanceof GLabsError) {
+    switch (error.code) {
+      case 'RECAPTCHA_REQUIRED':
+        console.error('Configure reCAPTCHA in client options');
+        break;
+      case 'RECAPTCHA_EVAL_FAILED':
+        console.error('Token evaluation failed after all retries');
+        break;
+      case 'RECAPTCHA_TIMEOUT':
+        console.error('Token request timed out, try again');
+        break;
+      case 'RECAPTCHA_FAILED':
+        console.error('Token request failed:', error.message);
+        break;
+      case 'RECAPTCHA_API_ERROR':
+        console.error('Provider API error:', error.message);
+        break;
+    }
+  }
+}
+```
+
+## Cost Considerations
+
+Both providers charge per solved captcha:
+
+- **YesCaptcha**: Check current pricing at [yescaptcha.com](https://yescaptcha.com)
+- **CapSolver**: Check current pricing at [capsolver.com](https://capsolver.com)
+
+**Note:** Each generation request requires a new token. If evaluation fails, the SDK will request additional tokens (up to 3 per request). Plan your budget accordingly.

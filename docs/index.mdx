@@ -1,0 +1,62 @@
+---
+title: GLabs SDK
+description: TypeScript SDK for Google Labs AI media generation APIs
+---
+
+# GLabs SDK
+
+`@vrex/glabs-sdk` is a TypeScript SDK for interacting with Google Labs AI APIs for image and video generation.
+
+## Features
+
+- **Image Generation** - Generate AI images using Google's Imagen models
+- **Video Generation** - Create videos using Google's Veo models
+- **Multiple Video Modes** - Support for text-to-video, image-to-video, video extension, camera control, and more
+- **Account Tier Support** - Automatic handling of Pro and Ultra tier differences
+- **reCAPTCHA Integration** - Built-in support for YesCaptcha and CapSolver providers
+- **Type-Safe** - Full TypeScript support with exported types
+- **Retry Logic** - Automatic retry on network errors
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@vrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: 'your-bearer-token',
+  accountTier: 'pro',
+  projectId: 'your-project-id',
+  recaptcha: {
+    provider: 'yescaptcha',
+    apiKey: 'your-recaptcha-api-key',
+  },
+});
+
+// Generate an image
+const imageResult = await client.images.generate({
+  prompt: 'A beautiful sunset over mountains',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Generate a video
+const videoOp = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city at sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Check video status
+const status = await client.videos.checkStatus({
+  operationName: videoOp.operationName,
+});
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Getting Started" href="/docs/glabs-sdk/getting-started" />
+  <Card title="Client Configuration" href="/docs/glabs-sdk/client" />
+  <Card title="Image Generation" href="/docs/glabs-sdk/image-generation" />
+  <Card title="Video Generation" href="/docs/glabs-sdk/video-generation" />
+</Cards>

@@ -1,0 +1,46 @@
+{
+  "name": "@vrex/glabs-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Google Labs AI media generation APIs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "google-labs",
+    "ai",
+    "image-generation",
+    "video-generation",
+    "veo",
+    "imagen"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getvrex/glabs-sdk"
+  }
+}
