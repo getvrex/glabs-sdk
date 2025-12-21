@@ -9,9 +9,14 @@ import type { GLabsLogger } from "../types/client";
 import type {
   CapSolverCreateTaskResponse,
   CapSolverGetResultResponse,
+  CustomSolverRequest,
+  CustomSolverResponse,
   RecaptchaConfig,
   RecaptchaProvider,
   RecaptchaTokenResult,
+  RegotchaCreateTaskResponse,
+  RegotchaGetResultResponse,
+  Veo3SolverResponse,
   YesCaptchaCreateTaskResponse,
   YesCaptchaGetResultResponse,
 } from "../types/recaptcha";
@@ -35,7 +40,27 @@ export class RecaptchaService {
    * Get a reCAPTCHA token using the configured provider
    */
   async getToken(config: RecaptchaConfig): Promise<RecaptchaTokenResult> {
-    const { provider, apiKey, proxy, maxRetries } = config;
+    const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken } = config;
+
+    if (provider === "custom") {
+      if (!customEndpoint) {
+        throw new GLabsError(
+          "Custom endpoint URL is required for custom provider",
+          "RECAPTCHA_CONFIG_ERROR"
+        );
+      }
+      return await this.getTokenFromCustomSolver(customEndpoint, { proxy, anchor, reload });
+    }
+
+    if (provider === "veo3solver") {
+      if (!jwtToken) {
+        throw new GLabsError(
+          "JWT token is required for veo3solver provider",
+          "RECAPTCHA_CONFIG_ERROR"
+        );
+      }
+      return await this.getTokenFromVeo3Solver(jwtToken);
+    }
 
     if (!apiKey) {
       throw new GLabsError(
@@ -46,6 +71,10 @@ export class RecaptchaService {
 
     if (provider === "capsolver") {
       return await this.getTokenFromCapSolver(apiKey, maxRetries, proxy);
+    }
+
+    if (provider === "regotcha") {
+      return await this.getTokenFromRegotcha(apiKey, maxRetries);
     }
 
     return await this.getTokenFromYesCaptcha(apiKey, maxRetries);
@@ -337,6 +366,224 @@ export class RecaptchaService {
     }
 
     return result;
+  }
+
+  /**
+   * Get token from Regotcha service
+   */
+  private async getTokenFromRegotcha(
+    apiKey: string,
+    maxRetries = 30
+  ): Promise<RecaptchaTokenResult> {
+    this.logger.log(
+      `[reCAPTCHA] Requesting token from Regotcha (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+    );
+
+    const taskId = await this.createRegotchaTask(apiKey);
+    this.logger.log(`[reCAPTCHA] Task created (ID: ${taskId}), polling...`);
+
+    const startTime = Date.now();
+
+    for (let i = 0; i < maxRetries; i++) {
+      await sleep(DEFAULTS.REGOTCHA_POLL_INTERVAL);
+
+      const result = await this.getRegotchaResult(apiKey, taskId);
+
+      if (result.status === "ready" && result.solution) {
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        this.logger.log(
+          `[reCAPTCHA] Token obtained (${elapsed}s): ${result.solution.gRecaptchaResponse.substring(0, 50)}...`
+        );
+        return { token: result.solution.gRecaptchaResponse };
+      }
+
+      if (result.status === "failed") {
+        throw new GLabsError(
+          `Regotcha task failed: ${result.errorDescription ?? "Unknown error"}`,
+          "RECAPTCHA_FAILED"
+        );
+      }
+
+      if (result.status === "processing") {
+        this.logger.log(`[reCAPTCHA] Processing... ${i + 1}/${maxRetries}`);
+      }
+    }
+
+    throw new GLabsError(
+      `Regotcha timeout after ${maxRetries} attempts`,
+      "RECAPTCHA_TIMEOUT"
+    );
+  }
+
+  /**
+   * Create a Regotcha task
+   */
+  private async createRegotchaTask(clientKey: string): Promise<string> {
+    const response = await fetch(
+      `${RECAPTCHA_CONFIG.REGOTCHA_API_BASE}/createTask`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientKey,
+          task: {
+            type: "ReCaptchaV3EnterpriseTaskProxyLess",
+            websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
+            websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
+            pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new GLabsError(
+        `Regotcha API error: ${response.status} ${response.statusText}`,
+        "RECAPTCHA_API_ERROR"
+      );
+    }
+
+    const result = (await response.json()) as RegotchaCreateTaskResponse;
+
+    if (result.errorId && result.errorId !== 0) {
+      throw new GLabsError(
+        `Regotcha create task failed: [${result.errorCode}] ${result.errorDescription ?? "Unknown error"}`,
+        "RECAPTCHA_CREATE_TASK_ERROR"
+      );
+    }
+
+    if (!result.taskId) {
+      throw new GLabsError(
+        "Regotcha create task failed: No taskId returned",
+        "RECAPTCHA_CREATE_TASK_ERROR"
+      );
+    }
+
+    return result.taskId;
+  }
+
+  /**
+   * Get Regotcha task result
+   */
+  private async getRegotchaResult(
+    clientKey: string,
+    taskId: string
+  ): Promise<RegotchaGetResultResponse> {
+    const response = await fetch(
+      `${RECAPTCHA_CONFIG.REGOTCHA_API_BASE}/getTaskResult`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientKey, taskId }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new GLabsError(
+        `Regotcha API error: ${response.status} ${response.statusText}`,
+        "RECAPTCHA_API_ERROR"
+      );
+    }
+
+    const result = (await response.json()) as RegotchaGetResultResponse;
+
+    if (result.errorId && result.errorId !== 0 && result.status !== "processing") {
+      throw new GLabsError(
+        `Regotcha get result failed: [${result.errorCode}] ${result.errorDescription ?? "Unknown error"}`,
+        "RECAPTCHA_GET_RESULT_ERROR"
+      );
+    }
+
+    return result;
+  }
+
+  /**
+   * Get token from custom solver service
+   */
+  private async getTokenFromCustomSolver(
+    endpoint: string,
+    options: { proxy?: string; anchor?: string; reload?: string } = {}
+  ): Promise<RecaptchaTokenResult> {
+    this.logger.log(
+      `[reCAPTCHA] Requesting token from custom solver (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+    );
+
+    const requestBody: CustomSolverRequest = {
+      websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
+      websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
+      pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+      headless: false,
+    };
+
+    if (options.anchor) requestBody.anchor = options.anchor;
+    if (options.reload) requestBody.reload = options.reload;
+    if (options.proxy) requestBody.proxy = options.proxy;
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new GLabsError(
+        `Custom solver API error: ${response.status} ${response.statusText}`,
+        "RECAPTCHA_API_ERROR"
+      );
+    }
+
+    const result = (await response.json()) as CustomSolverResponse;
+
+    if (!result.success || !result.token) {
+      throw new GLabsError(
+        `Custom solver failed: ${result.error ?? "Unknown error"}`,
+        "RECAPTCHA_FAILED"
+      );
+    }
+
+    this.logger.log(
+      `[reCAPTCHA] Token obtained: ${result.token.substring(0, 50)}...`
+    );
+
+    return { token: result.token };
+  }
+
+  /**
+   * Get token from Veo3Solver service
+   */
+  private async getTokenFromVeo3Solver(
+    jwtToken: string
+  ): Promise<RecaptchaTokenResult> {
+    this.logger.log("[reCAPTCHA] Requesting token from Veo3Solver...");
+
+    const response = await fetch(RECAPTCHA_CONFIG.VEO3SOLVER_API_URL, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new GLabsError(
+        `Veo3Solver API error: ${response.status} ${response.statusText}`,
+        "RECAPTCHA_API_ERROR"
+      );
+    }
+
+    const result = (await response.json()) as Veo3SolverResponse;
+
+    if (!result.success || !result.token) {
+      throw new GLabsError(
+        "Veo3Solver returned unsuccessful response",
+        "RECAPTCHA_FAILED"
+      );
+    }
+
+    this.logger.log(
+      `[reCAPTCHA] Token obtained (age: ${result.age}, count: ${result.countTokens}): ${result.token.substring(0, 50)}...`
+    );
+
+    return { token: result.token };
   }
 }
 

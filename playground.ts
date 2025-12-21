@@ -4,6 +4,15 @@
  * Run with:
  *   GLABS_BEARER_TOKEN=xxx RECAPTCHA_API_KEY=xxx bun playground.ts
  *
+ * Or with Regotcha:
+ *   GLABS_BEARER_TOKEN=xxx REGOTCHA_API_KEY=xxx bun playground.ts
+ *
+ * Or with Veo3Solver:
+ *   GLABS_BEARER_TOKEN=xxx VEO3SOLVER_JWT_TOKEN=xxx bun playground.ts
+ *
+ * Or with custom reCAPTCHA solver:
+ *   GLABS_BEARER_TOKEN=xxx CUSTOM_RECAPTCHA_ENDPOINT=http://localhost:8000/solve bun playground.ts
+ *
  * Or create a .env.local file with the variables and run:
  *   bun playground.ts
  */
@@ -26,21 +35,50 @@ if (await envFile.exists()) {
 const bearerToken = process.env.GLABS_BEARER_TOKEN;
 const projectId = process.env.GLABS_PROJECT_ID;
 const recaptchaApiKey = process.env.RECAPTCHA_API_KEY;
+const regotchaApiKey = process.env.REGOTCHA_API_KEY;
+const customRecaptchaEndpoint = process.env.CUSTOM_RECAPTCHA_ENDPOINT;
+const veo3solverJwtToken = process.env.VEO3SOLVER_JWT_TOKEN;
 
 if (!bearerToken) {
   console.error("Missing GLABS_BEARER_TOKEN");
   process.exit(1);
 }
 
+// Configure recaptcha: veo3solver > regotcha > custom > capsolver
+const getRecaptchaConfig = () => {
+  if (veo3solverJwtToken) {
+    return {
+      provider: "veo3solver" as const,
+      jwtToken: veo3solverJwtToken,
+    };
+  }
+  if (regotchaApiKey) {
+    return {
+      provider: "regotcha" as const,
+      apiKey: regotchaApiKey,
+    };
+  }
+  if (customRecaptchaEndpoint) {
+    return {
+      provider: "custom" as const,
+      customEndpoint: customRecaptchaEndpoint,
+      anchor: process.env.RECAPTCHA_ANCHOR,
+      reload: process.env.RECAPTCHA_RELOAD,
+    };
+  }
+  if (recaptchaApiKey) {
+    return {
+      provider: "capsolver" as const,
+      apiKey: recaptchaApiKey,
+    };
+  }
+  return undefined;
+};
+
 const client = new GLabsClient({
   bearerToken,
   projectId,
-  recaptcha: recaptchaApiKey
-    ? {
-        provider: "capsolver",
-        apiKey: recaptchaApiKey,
-      }
-    : undefined,
+  recaptcha: getRecaptchaConfig(),
 });
 
 console.log("=== GLabs SDK Playground ===\n");

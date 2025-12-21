@@ -5,7 +5,7 @@ description: Configure reCAPTCHA providers for video generation
 
 # reCAPTCHA Configuration
 
-Both image and video generation require reCAPTCHA verification. The SDK supports two providers: **YesCaptcha** and **CapSolver**.
+Both image and video generation require reCAPTCHA verification. The SDK supports five providers: **YesCaptcha**, **CapSolver**, **Regotcha**, **Veo3Solver**, and **Custom** (self-hosted).
 
 ## Why reCAPTCHA?
 
@@ -48,13 +48,98 @@ const client = new GLabsClient({
 });
 ```
 
+### Regotcha
+
+[Regotcha](https://regotcha.com) is a captcha solving service with a similar API to CapSolver.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'your-regotcha-api-key',
+    maxRetries: 30, // Optional: max polling attempts (default: 30)
+  },
+});
+```
+
+### Veo3Solver
+
+Veo3Solver is a token service that provides pre-solved reCAPTCHA tokens via JWT authentication.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'veo3solver',
+    jwtToken: 'your-jwt-token',
+  },
+});
+```
+
+No polling required - tokens are returned immediately via a simple GET request.
+
+### Custom Solver
+
+Use your own self-hosted reCAPTCHA solver service.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'custom',
+    customEndpoint: 'http://localhost:8000/solve',
+    proxy: 'http://user:pass@host:port', // Optional
+    anchor: 'PCFET0NUWVBFIEhUTUw...', // Optional
+    reload: 'CiAgICAgICAgICAgIGZldGNo...', // Optional
+  },
+});
+```
+
+**Custom Solver API Specification:**
+
+Your custom solver endpoint must implement a POST endpoint that accepts:
+
+```json
+{
+  "websiteURL": "https://labs.google",
+  "websiteKey": "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
+  "pageAction": "FLOW_GENERATION",
+  "anchor": "...",     // Optional, base64 encoded
+  "reload": "...",     // Optional, base64 encoded
+  "proxy": "http://user:pass@host:port"  // Optional
+}
+```
+
+And returns:
+
+```json
+{
+  "success": true,
+  "token": "03AFcWeA..."
+}
+```
+
+On error:
+
+```json
+{
+  "success": false,
+  "error": "Error message"
+}
+```
+
 ## Configuration Options
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `provider` | `'yescaptcha' \| 'capsolver'` | Yes | The captcha solving service to use |
-| `apiKey` | `string` | Yes | API key for the provider |
-| `proxy` | `string` | No | Proxy URL (CapSolver only) |
+| `provider` | `'yescaptcha' \| 'capsolver' \| 'regotcha' \| 'veo3solver' \| 'custom'` | Yes | The captcha solving service to use |
+| `apiKey` | `string` | Yes* | API key for the provider (*not required for custom/veo3solver) |
+| `jwtToken` | `string` | No** | JWT token for authentication (**required for veo3solver) |
+| `customEndpoint` | `string` | No*** | Custom solver endpoint URL (***required for custom provider) |
+| `proxy` | `string` | No | Proxy URL (CapSolver and Custom only) |
+| `anchor` | `string` | No | Anchor parameter (Custom only) |
+| `reload` | `string` | No | Reload parameter (Custom only) |
 | `maxRetries` | `number` | No | Maximum polling attempts |
 
 ## How It Works
@@ -83,6 +168,33 @@ CapSolver -> SDK: taskId
 SDK -> CapSolver: getTaskResult (polling every 2s)
 CapSolver -> SDK: { gRecaptchaResponse: "token", userAgent, secChUa }
 ```
+
+### Regotcha Flow
+
+```
+SDK -> Regotcha: createTask (ReCaptchaV3EnterpriseTaskProxyLess)
+Regotcha -> SDK: taskId
+SDK -> Regotcha: getTaskResult (polling every 2s)
+Regotcha -> SDK: { gRecaptchaResponse: "token" }
+```
+
+### Veo3Solver Flow
+
+```
+SDK -> Veo3Solver: GET /api/fix/get-token (Authorization: Bearer jwt)
+Veo3Solver -> SDK: { success: true, token: "...", age: 5, countTokens: 100 }
+```
+
+No polling required - tokens are returned immediately.
+
+### Custom Solver Flow
+
+```
+SDK -> Custom: POST /solve { websiteURL, websiteKey, pageAction, ... }
+Custom -> SDK: { success: true, token: "..." }
+```
+
+The custom solver handles the entire solving process synchronously. No polling is required.
 
 ## Browser Fingerprint
 

@@ -3,18 +3,26 @@
  */
 
 /** Supported reCAPTCHA service providers */
-export type RecaptchaProvider = "yescaptcha" | "capsolver";
+export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custom" | "veo3solver";
 
 /** reCAPTCHA configuration */
 export type RecaptchaConfig = {
   /** Provider to use for solving reCAPTCHA */
   provider: RecaptchaProvider;
-  /** API key for the provider */
-  apiKey: string;
-  /** Proxy address (only supported by CapSolver) */
+  /** API key for the provider (not required for custom/veo3solver providers) */
+  apiKey?: string;
+  /** Proxy address (supported by CapSolver and custom providers) */
   proxy?: string;
   /** Maximum retry attempts for polling */
   maxRetries?: number;
+  /** Custom solver endpoint URL (required when provider is 'custom') */
+  customEndpoint?: string;
+  /** Custom solver anchor parameter (optional) */
+  anchor?: string;
+  /** Custom solver reload parameter (optional) */
+  reload?: string;
+  /** JWT token for veo3solver provider */
+  jwtToken?: string;
 };
 
 /** Result from reCAPTCHA token request */
@@ -62,6 +70,51 @@ export type CapSolverGetResultResponse = {
     gRecaptchaResponse: string;
     userAgent?: string;
     secChUa?: string;
+  };
+  errorCode?: string;
+  errorDescription?: string;
+};
+
+/** Custom solver request payload */
+export type CustomSolverRequest = {
+  websiteURL: string;
+  websiteKey: string;
+  pageAction: string;
+  anchor?: string;
+  reload?: string;
+  proxy?: string;
+  headless?: boolean;
+};
+
+/** Custom solver response */
+export type CustomSolverResponse = {
+  success: boolean;
+  token?: string;
+  error?: string;
+};
+
+/** Veo3Solver response */
+export type Veo3SolverResponse = {
+  success: boolean;
+  token?: string;
+  age?: number;
+  countTokens?: number;
+};
+
+/** Regotcha create task response */
+export type RegotchaCreateTaskResponse = {
+  errorId?: number;
+  errorCode?: string;
+  errorDescription?: string;
+  taskId?: string;
+};
+
+/** Regotcha get result response */
+export type RegotchaGetResultResponse = {
+  errorId?: number;
+  status: "processing" | "ready" | "failed";
+  solution?: {
+    gRecaptchaResponse: string;
   };
   errorCode?: string;
   errorDescription?: string;

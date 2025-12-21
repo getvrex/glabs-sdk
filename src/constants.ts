@@ -30,6 +30,9 @@ export const ENDPOINTS = {
 export const RECAPTCHA_CONFIG = {
   YESCAPTCHA_API_BASE: "https://api.yescaptcha.com",
   CAPSOLVER_API_BASE: "https://api.capsolver.com",
+  // REGOTCHA_API_BASE: "http://localhost:7157",
+  REGOTCHA_API_BASE: "https://api.regotcha.com",
+  VEO3SOLVER_API_URL: "https://new-rest.onewise.app/api/fix/get-token",
   WEBSITE_KEY: "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
   WEBSITE_URL: "https://labs.google/",
   PAGE_ACTION: "FLOW_GENERATION",
@@ -52,7 +55,8 @@ export const DEFAULTS = {
   RECAPTCHA_MAX_RETRIES: 20,
   RECAPTCHA_POLL_INTERVAL: 3000,
   CAPSOLVER_POLL_INTERVAL: 2000,
-  RECAPTCHA_EVAL_MAX_RETRIES: 3,
+  REGOTCHA_POLL_INTERVAL: 5000,
+  RECAPTCHA_EVAL_MAX_RETRIES: 20,
   VIDEO_EXTEND_START_FRAME: 168,
   VIDEO_EXTEND_END_FRAME: 191,
 } as const;
