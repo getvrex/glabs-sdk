@@ -115,6 +115,8 @@ try {
   console.log("   Error:", (error as Error).message);
 }
 
+let videoMediaGenerationId: string | undefined;
+
 // Test 4: Image-to-Video (requires an image mediaId from step 3)
 try {
   if (!imageMediaId) {
@@ -159,11 +161,63 @@ try {
     if (status.videoUrl) {
       console.log("   Video URL:", status.videoUrl);
     }
+    if (status.mediaGenerationId) {
+      videoMediaGenerationId = status.mediaGenerationId;
+      console.log("   Media Generation ID:", videoMediaGenerationId);
+    }
     if (status.error) {
       console.log("   Error:", status.error);
     }
   } else {
     console.log("   Skipped: GLABS_PROJECT_ID required for video generation");
+  }
+} catch (error) {
+  console.log("   Error:", (error as Error).message);
+}
+
+// Test 5: Video Upscale to 1080p (requires a video mediaGenerationId from step 4)
+try {
+  if (!videoMediaGenerationId) {
+    console.log("\n5. Upscaling video to 1080p...");
+    console.log("   Skipped: Video media generation ID not found");
+    throw new Error("Video media generation ID not found");
+  }
+  console.log("\n5. Upscaling video to 1080p...");
+  const upscaleOp = await client.videos.upsample({
+    originalMediaId: videoMediaGenerationId,
+    sessionId,
+    aspectRatio: "16:9",
+  });
+  console.log("   Operation started:", upscaleOp.operationName);
+  console.log("   Scene ID:", upscaleOp.sceneId);
+
+  // Poll for completion
+  console.log("   Polling for upscale status...");
+  let upscaleStatus = await client.videos.checkStatus({
+    operationName: upscaleOp.operationName,
+    sceneId: upscaleOp.sceneId,
+  });
+
+  const isUpscaleProcessing = (s: string) =>
+    s !== "MEDIA_GENERATION_STATUS_COMPLETED" &&
+    s !== "MEDIA_GENERATION_STATUS_SUCCESSFUL" &&
+    s !== "MEDIA_GENERATION_STATUS_FAILED";
+
+  while (isUpscaleProcessing(upscaleStatus.status)) {
+    console.log("   Status:", upscaleStatus.status);
+    await new Promise((r) => setTimeout(r, 10000)); // 10s poll interval for upscale
+    upscaleStatus = await client.videos.checkStatus({
+      operationName: upscaleOp.operationName,
+      sceneId: upscaleOp.sceneId,
+    });
+  }
+
+  console.log("   Final upscale status:", upscaleStatus);
+  if (upscaleStatus.videoUrl) {
+    console.log("   Upscaled Video URL:", upscaleStatus.videoUrl);
+  }
+  if (upscaleStatus.error) {
+    console.log("   Error:", upscaleStatus.error);
   }
 } catch (error) {
   console.log("   Error:", (error as Error).message);
