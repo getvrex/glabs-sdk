@@ -1,0 +1,659 @@
+# @getvrex/glabs-sdk
+
+> TypeScript SDK for Google Labs AI media generation APIs (Imagen, Veo)
+
+## Installation
+
+```bash
+npm install @getvrex/glabs-sdk
+```
+
+Configure `.npmrc` for private package:
+```
+@getvrex:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  accountTier: 'pro',
+  projectId: 'your-project-id',
+  recaptcha: {
+    provider: 'regotcha', // or 'capsolver'
+    apiKey: 'your-api-key',
+  },
+});
+
+// Generate image
+const imageResult = await client.images.generate({
+  prompt: 'A beautiful sunset over mountains',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Generate video
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Check video status
+const status = await client.videos.checkStatus({
+  operationName: operation.operationName,
+});
+```
+
+---
+
+## Client Configuration
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient(config: GLabsClientConfig);
+```
+
+### GLabsClientConfig
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `bearerToken` | `string` | Yes | - | Authentication bearer token |
+| `accountTier` | `'pro' \| 'ultra'` | No | `'pro'` | Account subscription tier |
+| `projectId` | `string` | No | - | Default project ID for requests |
+| `recaptcha` | `RecaptchaConfig` | No | - | reCAPTCHA solver configuration |
+| `logger` | `GLabsLogger` | No | console | Custom logger instance |
+| `timeout` | `number` | No | `120000` | Request timeout in ms |
+| `maxRetries` | `number` | No | `2` | Max retry attempts |
+| `retryDelay` | `number` | No | `1500` | Delay between retries in ms |
+
+### RecaptchaConfig
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `provider` | `'regotcha' \| 'capsolver' \| 'yescaptcha' \| 'custom' \| 'veo3solver'` | Yes | Solver provider |
+| `apiKey` | `string` | Conditional | API key (required for regotcha, capsolver, yescaptcha) |
+| `proxy` | `string` | No | Proxy address (capsolver, custom) |
+| `maxRetries` | `number` | No | Max polling retries |
+| `customEndpoint` | `string` | Conditional | Endpoint URL (required for custom provider) |
+| `jwtToken` | `string` | Conditional | JWT token (required for veo3solver) |
+
+### Static Methods
+
+```typescript
+// Generate unique session ID
+const sessionId = GLabsClient.generateSessionId();
+```
+
+---
+
+## Image API
+
+### client.images.generate(options)
+
+Generate images from text prompt using Imagen 3.
+
+```typescript
+const result = await client.images.generate({
+  prompt: 'A futuristic cityscape at sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  count: 2,           // Optional: 1-4 images
+  seed: 12345,        // Optional: for reproducibility
+  model: 'nanobanana', // Optional: 'nanobanana' | 'nanobananapro'
+  references: [       // Optional: reference images
+    { mediaId: 'uploaded-media-id' }
+  ],
+});
+```
+
+**Options (GenerateImageOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `prompt` | `string` | Yes | Text description of image |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Output aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `count` | `number` | No | Number of images (1-4) |
+| `seed` | `number` | No | Random seed |
+| `model` | `'nanobanana' \| 'nanobananapro'` | No | Image model |
+| `references` | `ImageReference[]` | No | Reference images |
+| `prompts` | `string[]` | No | Multiple prompts (overrides count) |
+
+**Returns (GenerateImageResult):**
+
+```typescript
+{
+  images: [
+    {
+      encodedImage?: string;      // Base64 image data
+      mediaId?: string;           // Media ID for video generation
+      mediaGenerationId?: string;
+      fifeUrl?: string;           // CDN URL
+      prompt?: string;
+      seed?: number;
+      mimeType?: string;
+    }
+  ],
+  sessionId: string;
+}
+```
+
+### client.images.upload(options)
+
+Upload image for use in video generation.
+
+```typescript
+const result = await client.images.upload({
+  imageBase64: 'base64-encoded-image-data',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (UploadImageOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `imageBase64` | `string` | Yes | Base64 image (with/without data URL prefix) |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | No | Image aspect ratio |
+
+**Returns (UploadImageResult):**
+
+```typescript
+{
+  mediaGenerationId?: string;
+  mediaId?: string;        // Use this for video generation
+  width?: number;
+  height?: number;
+  sessionId: string;
+}
+```
+
+### client.images.getCreditStatus()
+
+Check account credits and tier status.
+
+```typescript
+const status = await client.images.getCreditStatus();
+```
+
+**Returns (CreditStatusResult):**
+
+```typescript
+{
+  credits: number;
+  userPaygateTier: string;
+  g1MembershipState: string;
+  isUserAnimateCountryEnabled: boolean;
+}
+```
+
+---
+
+## Video API
+
+### client.videos.generateTextToVideo(options)
+
+Generate video from text prompt using Veo 3.
+
+```typescript
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of mountains at sunrise',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  videoMode: 'fast',    // Optional: 'fast' | 'quality'
+  seed: 12345,          // Optional: for reproducibility
+});
+```
+
+**Options (GenerateTextToVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `prompt` | `string` | Yes | Video description |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Video aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `accountTier` | `'pro' \| 'ultra'` | No | Override client tier |
+| `videoMode` | `'fast' \| 'quality'` | No | Generation mode |
+| `seed` | `number` | No | Random seed |
+| `sceneId` | `string` | No | Custom scene ID |
+
+**Returns (VideoOperationResult):**
+
+```typescript
+{
+  operationName: string;   // Use for checkStatus
+  sceneId: string;
+  status: string;
+  remainingCredits?: number;
+}
+```
+
+### client.videos.generateImageToVideo(options)
+
+Generate video from image(s) - first frame or first+last frame.
+
+```typescript
+// First frame only
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'Camera slowly zooms into the scene',
+  startMediaId: 'uploaded-image-media-id',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// First and last frame (FL mode)
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'Smooth transition between scenes',
+  startMediaId: 'first-frame-media-id',
+  endMediaId: 'last-frame-media-id',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (GenerateImageToVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `prompt` | `string` | Yes | Video description |
+| `startMediaId` | `string` | Yes | First frame image media ID |
+| `endMediaId` | `string` | No | Last frame image media ID (enables FL mode) |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Video aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `accountTier` | `'pro' \| 'ultra'` | No | Override client tier |
+| `videoMode` | `'fast' \| 'quality'` | No | Generation mode |
+| `seed` | `number` | No | Random seed |
+
+### client.videos.generateReferenceImagesVideo(options)
+
+Generate video using 1-3 reference images as style/content guidance.
+
+```typescript
+const operation = await client.videos.generateReferenceImagesVideo({
+  prompt: 'A person walking through a forest',
+  referenceMediaIds: ['media-id-1', 'media-id-2'],
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (GenerateReferenceImagesVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `prompt` | `string` | Yes | Video description |
+| `referenceMediaIds` | `string[]` | Yes | 1-3 reference image media IDs |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Video aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `accountTier` | `'pro' \| 'ultra'` | No | Override client tier |
+| `seed` | `number` | No | Random seed |
+
+### client.videos.extend(options)
+
+Extend an existing video with additional content.
+
+```typescript
+const operation = await client.videos.extend({
+  mediaId: 'existing-video-media-id',
+  prompt: 'Continue the scene with a dramatic reveal',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (ExtendVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `mediaId` | `string` | Yes | Source video media ID |
+| `prompt` | `string` | Yes | Description for extended portion |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Video aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `accountTier` | `'pro' \| 'ultra'` | No | Override client tier |
+| `videoMode` | `'fast' \| 'quality'` | No | Generation mode |
+| `startFrameIndex` | `number` | No | Start frame (default: 168) |
+| `endFrameIndex` | `number` | No | End frame (default: 191) |
+| `seed` | `number` | No | Random seed |
+
+### client.videos.reshoot(options)
+
+Apply camera control motion to an existing video.
+
+```typescript
+const operation = await client.videos.reshoot({
+  mediaId: 'existing-video-media-id',
+  reshootMotionType: 'RESHOOT_MOTION_TYPE_FORWARD',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (ReshootVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `mediaId` | `string` | Yes | Source video media ID |
+| `reshootMotionType` | `ReshootMotionType` | Yes | Camera motion type |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Video aspect ratio |
+| `projectId` | `string` | No | Override client projectId |
+| `accountTier` | `'pro' \| 'ultra'` | No | Override client tier |
+| `seed` | `number` | No | Random seed |
+
+**ReshootMotionType Values:**
+
+Camera Control:
+- `RESHOOT_MOTION_TYPE_UP` - Pan up
+- `RESHOOT_MOTION_TYPE_DOWN` - Pan down
+- `RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT` - Pan left to right
+- `RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT` - Pan right to left
+- `RESHOOT_MOTION_TYPE_FORWARD` - Dolly forward
+- `RESHOOT_MOTION_TYPE_BACKWARD` - Dolly backward
+- `RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT` - Dolly in with zoom out
+- `RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE` - Dolly out with zoom in
+
+Camera Position:
+- `RESHOOT_MOTION_TYPE_STATIONARY_UP`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOWN`
+- `RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
+
+### client.videos.upsample(options)
+
+Upscale video to HD (1080p). Only supports 16:9 landscape videos.
+
+```typescript
+const operation = await client.videos.upsample({
+  originalMediaId: 'video-media-id',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Options (UpsampleVideoOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `originalMediaId` | `string` | Yes | Source video media ID |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9'` | No | Default: '16:9' (only supported ratio) |
+| `seed` | `number` | No | Random seed |
+
+### client.videos.checkStatus(options)
+
+Poll video generation status.
+
+```typescript
+const status = await client.videos.checkStatus({
+  operationName: operation.operationName,
+  sceneId: operation.sceneId,  // Optional
+});
+
+// Check if complete
+if (status.status === 'MEDIA_GENERATION_STATUS_COMPLETED' ||
+    status.status === 'MEDIA_GENERATION_STATUS_SUCCESSFUL') {
+  console.log('Video URL:', status.videoUrl);
+}
+
+if (status.status === 'MEDIA_GENERATION_STATUS_FAILED') {
+  console.error('Error:', status.error);
+}
+```
+
+**Options (CheckVideoStatusOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `operationName` | `string` | Yes | Operation name from generation result |
+| `sceneId` | `string` | No | Scene ID from generation result |
+
+**Returns (VideoStatusResult):**
+
+```typescript
+{
+  status: string;              // See VideoStatus values
+  videoUrl?: string;           // Video URL when complete
+  thumbnailUrl?: string;       // Thumbnail URL
+  duration?: number;           // Duration in seconds
+  mediaGenerationId?: string;  // Media ID for further operations
+  error?: string;              // Error message if failed
+  remainingCredits?: number;
+}
+```
+
+**VideoStatus Values:**
+- `MEDIA_GENERATION_STATUS_PENDING` - Queued
+- `MEDIA_GENERATION_STATUS_ACTIVE` - Processing started
+- `MEDIA_GENERATION_STATUS_PROCESSING` - Actively generating
+- `MEDIA_GENERATION_STATUS_COMPLETED` - Success
+- `MEDIA_GENERATION_STATUS_SUCCESSFUL` - Success
+- `MEDIA_GENERATION_STATUS_FAILED` - Failed
+
+---
+
+## Account Tiers
+
+| Tier | Video Modes | Default Mode | Features |
+|------|-------------|--------------|----------|
+| `pro` | fast, quality | fast | Veo 3, HD upscale, extend, reshoot |
+| `ultra` | fast, quality | quality | Veo 3, HD upscale, extend, reshoot |
+
+---
+
+## Tier Configuration Utilities
+
+```typescript
+import {
+  getTierCapabilities,
+  getEffectiveVideoMode,
+  getVideoApiConfig,
+  getImageApiConfig,
+  isFeatureSupported,
+} from '@getvrex/glabs-sdk';
+
+// Get tier capabilities
+const caps = getTierCapabilities('pro');
+// { supportedVideoModes, defaultVideoMode, paygateTier, supportsUpsample, ... }
+
+// Get effective video mode
+const mode = getEffectiveVideoMode('pro', 'quality');
+// Returns 'quality' if supported, otherwise default mode
+
+// Check feature support
+const result = isFeatureSupported('upsample', 'pro', '16:9');
+// { supported: true }
+
+const result2 = isFeatureSupported('upsample', 'pro', '9:16');
+// { supported: false, reason: 'HD upscaling only supports 16:9 landscape videos' }
+```
+
+---
+
+## Error Handling
+
+```typescript
+import { GLabsError } from '@getvrex/glabs-sdk';
+
+try {
+  await client.images.generate({ ... });
+} catch (error) {
+  if (error instanceof GLabsError) {
+    console.error('Code:', error.code);
+    console.error('Message:', error.message);
+    console.error('Status:', error.statusCode);
+  }
+}
+```
+
+**Error Codes:**
+- `NETWORK_ERROR` - Network connectivity issues
+- `HIGH_TRAFFIC` - Service busy, retry later
+- `INTERNAL_ERROR` - Server error
+- `INVALID_ARGUMENT` - Content policy violation
+- `PERMISSION_DENIED` - Auth/permission issues
+- `RECAPTCHA_REQUIRED` - reCAPTCHA config missing
+- `RECAPTCHA_EVAL_FAILED` - reCAPTCHA token rejected
+- `TIMEOUT` - Request timeout
+- `UNKNOWN` - Unknown error
+
+---
+
+## Type Imports
+
+```typescript
+import type {
+  // Client
+  GLabsClientConfig,
+  GLabsLogger,
+  ResolvedConfig,
+
+  // Common
+  AccountTier,
+  AspectRatio,
+  VideoMode,
+  VideoStatus,
+  ReshootMotionType,
+
+  // Image
+  GenerateImageOptions,
+  GenerateImageResult,
+  GeneratedImage,
+  UploadImageOptions,
+  UploadImageResult,
+  CreditStatusResult,
+  ImageReference,
+
+  // Video
+  GenerateTextToVideoOptions,
+  GenerateImageToVideoOptions,
+  GenerateReferenceImagesVideoOptions,
+  ExtendVideoOptions,
+  ReshootVideoOptions,
+  UpsampleVideoOptions,
+  CheckVideoStatusOptions,
+  VideoOperationResult,
+  VideoStatusResult,
+
+  // reCAPTCHA
+  RecaptchaConfig,
+  RecaptchaProvider,
+  RecaptchaTokenResult,
+
+  // Tier
+  TierCapabilities,
+  FeatureSupportResult,
+  SupportedFeature,
+} from '@getvrex/glabs-sdk';
+```
+
+---
+
+## Complete Example: Image to Video Pipeline
+
+```typescript
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_TOKEN!,
+  accountTier: 'pro',
+  projectId: process.env.PROJECT_ID!,
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: process.env.RECAPTCHA_API_KEY!,
+  },
+});
+
+async function generateVideo() {
+  const sessionId = GLabsClient.generateSessionId();
+
+  // 1. Generate an image
+  const imageResult = await client.images.generate({
+    prompt: 'A serene mountain lake at dawn',
+    sessionId,
+    aspectRatio: '16:9',
+  });
+
+  const mediaId = imageResult.images[0].mediaId!;
+
+  // 2. Generate video from image
+  const operation = await client.videos.generateImageToVideo({
+    prompt: 'Gentle ripples form on the lake surface as morning mist rises',
+    startMediaId: mediaId,
+    sessionId,
+    aspectRatio: '16:9',
+    videoMode: 'fast',
+  });
+
+  // 3. Poll for completion
+  let status;
+  do {
+    await new Promise(r => setTimeout(r, 5000));
+    status = await client.videos.checkStatus({
+      operationName: operation.operationName,
+    });
+    console.log('Status:', status.status);
+  } while (
+    status.status !== 'MEDIA_GENERATION_STATUS_COMPLETED' &&
+    status.status !== 'MEDIA_GENERATION_STATUS_SUCCESSFUL' &&
+    status.status !== 'MEDIA_GENERATION_STATUS_FAILED'
+  );
+
+  if (status.error) {
+    throw new Error(status.error);
+  }
+
+  // 4. Upscale to HD
+  const upsampleOp = await client.videos.upsample({
+    originalMediaId: status.mediaGenerationId!,
+    sessionId,
+    aspectRatio: '16:9',
+  });
+
+  // 5. Poll for upscale completion
+  do {
+    await new Promise(r => setTimeout(r, 5000));
+    status = await client.videos.checkStatus({
+      operationName: upsampleOp.operationName,
+    });
+  } while (
+    status.status !== 'MEDIA_GENERATION_STATUS_COMPLETED' &&
+    status.status !== 'MEDIA_GENERATION_STATUS_SUCCESSFUL' &&
+    status.status !== 'MEDIA_GENERATION_STATUS_FAILED'
+  );
+
+  console.log('HD Video URL:', status.videoUrl);
+  return status.videoUrl;
+}
+```
+
+---
+
+## API Base URL
+
+All requests go to: `https://aisandbox-pa.googleapis.com/v1`
+
+## reCAPTCHA Providers
+
+Recommended providers (in order):
+1. **regotcha** - Best success rate
+2. **capsolver** - Reliable alternative
+
+Provider endpoints:
+- regotcha: `https://api.regotcha.com`
+- capsolver: `https://api.capsolver.com`
+- yescaptcha: `https://api.yescaptcha.com`
