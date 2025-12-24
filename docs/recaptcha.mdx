@@ -5,7 +5,14 @@ description: Configure reCAPTCHA providers for video generation
 
 # reCAPTCHA Configuration
 
-Both image and video generation require reCAPTCHA verification. The SDK supports five providers: **YesCaptcha**, **CapSolver**, **Regotcha**, **Veo3Solver**, and **Custom** (self-hosted).
+Both image and video generation require reCAPTCHA verification. The SDK supports five providers.
+
+**Recommended providers:**
+- **Regotcha** - Best success rate for Google Labs, affordable pricing
+- **CapSolver** - High reliability with proxy support and browser fingerprinting
+
+**Other providers:**
+- YesCaptcha, Veo3Solver, Custom (self-hosted)
 
 ## Why reCAPTCHA?
 
@@ -17,24 +24,30 @@ Google Labs uses reCAPTCHA v3 Enterprise to protect against abuse. The SDK handl
 
 ## Supported Providers
 
-### YesCaptcha
+### Regotcha (Recommended)
 
-[YesCaptcha](https://yescaptcha.com) is a captcha solving service.
+[Regotcha](https://regotcha.com) offers the best success rate for Google Labs reCAPTCHA v3 Enterprise at competitive pricing.
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'your-token',
   recaptcha: {
-    provider: 'yescaptcha',
-    apiKey: 'your-yescaptcha-client-key',
-    maxRetries: 20, // Optional: max polling attempts (default: 20)
+    provider: 'regotcha',
+    apiKey: 'your-regotcha-api-key',
+    maxRetries: 30, // Optional: max polling attempts (default: 30)
   },
 });
 ```
 
-### CapSolver
+**Why Regotcha?**
+- Optimized for Google Labs reCAPTCHA v3 Enterprise
+- Fast token generation (typically 5-15s)
+- Affordable pricing
+- Simple API with high reliability
 
-[CapSolver](https://capsolver.com) is another captcha solving service with proxy support.
+### CapSolver (Recommended)
+
+[CapSolver](https://capsolver.com) provides high reliability with advanced features like proxy support and browser fingerprinting.
 
 ```typescript
 const client = new GLabsClient({
@@ -48,17 +61,23 @@ const client = new GLabsClient({
 });
 ```
 
-### Regotcha
+**Why CapSolver?**
+- Supports residential proxy for improved success rates
+- Provides browser fingerprint data (userAgent, secChUa)
+- Established service with good documentation
+- Suitable for high-volume usage
 
-[Regotcha](https://regotcha.com) is a captcha solving service with a similar API to CapSolver.
+### YesCaptcha
+
+[YesCaptcha](https://yescaptcha.com) is a captcha solving service.
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'your-token',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: 'your-regotcha-api-key',
-    maxRetries: 30, // Optional: max polling attempts (default: 30)
+    provider: 'yescaptcha',
+    apiKey: 'your-yescaptcha-client-key',
+    maxRetries: 20, // Optional: max polling attempts (default: 20)
   },
 });
 ```
@@ -293,9 +312,10 @@ try {
 
 ## Cost Considerations
 
-Both providers charge per solved captcha:
+All providers charge per solved captcha:
 
+- **Regotcha** (Recommended): Check current pricing at [regotcha.com](https://regotcha.com)
+- **CapSolver** (Recommended): Check current pricing at [capsolver.com](https://capsolver.com)
 - **YesCaptcha**: Check current pricing at [yescaptcha.com](https://yescaptcha.com)
-- **CapSolver**: Check current pricing at [capsolver.com](https://capsolver.com)
 
 **Note:** Each generation request requires a new token. If evaluation fails, the SDK will request additional tokens (up to 3 per request). Plan your budget accordingly.

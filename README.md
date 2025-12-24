@@ -25,7 +25,7 @@ const client = new GLabsClient({
   accountTier: 'pro',
   projectId: 'your-project-id',
   recaptcha: {
-    provider: 'yescaptcha',
+    provider: 'regotcha', // Recommended: regotcha or capsolver
     apiKey: 'your-api-key',
   },
 });

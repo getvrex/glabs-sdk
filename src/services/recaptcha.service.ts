@@ -587,5 +587,5 @@ export class RecaptchaService {
   }
 }
 
-/** Default provider for convenience */
-export const defaultRecaptchaProvider: RecaptchaProvider = "yescaptcha";
+/** Default provider for convenience (regotcha recommended) */
+export const defaultRecaptchaProvider: RecaptchaProvider = "regotcha";
