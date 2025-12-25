@@ -9,7 +9,7 @@ export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custo
 export type RecaptchaConfig = {
   /** Provider to use for solving reCAPTCHA */
   provider: RecaptchaProvider;
-  /** API key for the provider (not required for custom/veo3solver providers) */
+  /** API key for the provider (not required for custom/veo3solver/static providers) */
   apiKey?: string;
   /** Proxy address (supported by CapSolver and custom providers) */
   proxy?: string;
@@ -23,6 +23,8 @@ export type RecaptchaConfig = {
   reload?: string;
   /** JWT token for veo3solver provider */
   jwtToken?: string;
+  /** Static token to use directly (bypasses provider, useful for testing) */
+  staticToken?: string;
 };
 
 /** Result from reCAPTCHA token request */

@@ -98,6 +98,25 @@ const client = new GLabsClient({
 
 No polling required - tokens are returned immediately via a simple GET request.
 
+### Static Token (Testing)
+
+For testing captcha services or debugging, you can pass a token directly without using any provider.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'regotcha', // Provider is required but ignored when staticToken is set
+    staticToken: 'your-pre-obtained-token',
+  },
+});
+```
+
+This bypasses all provider logic and uses the provided token directly. Useful for:
+- Testing captcha provider tokens manually
+- Debugging API responses without waiting for token generation
+- Integration testing with known-good tokens
+
 ### Custom Solver
 
 Use your own self-hosted reCAPTCHA solver service.
@@ -156,6 +175,7 @@ On error:
 | `apiKey` | `string` | Yes* | API key for the provider (*not required for custom/veo3solver) |
 | `jwtToken` | `string` | No** | JWT token for authentication (**required for veo3solver) |
 | `customEndpoint` | `string` | No*** | Custom solver endpoint URL (***required for custom provider) |
+| `staticToken` | `string` | No | Static token to use directly (bypasses provider, useful for testing) |
 | `proxy` | `string` | No | Proxy URL (CapSolver and Custom only) |
 | `anchor` | `string` | No | Anchor parameter (Custom only) |
 | `reload` | `string` | No | Reload parameter (Custom only) |

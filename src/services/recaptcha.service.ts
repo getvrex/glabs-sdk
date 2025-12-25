@@ -40,7 +40,13 @@ export class RecaptchaService {
    * Get a reCAPTCHA token using the configured provider
    */
   async getToken(config: RecaptchaConfig): Promise<RecaptchaTokenResult> {
-    const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken } = config;
+    const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken, staticToken } = config;
+
+    // If staticToken provided, return it directly (useful for testing)
+    if (staticToken) {
+      this.logger.log(`[reCAPTCHA] Using static token: ${staticToken.substring(0, 50)}...`);
+      return { token: staticToken };
+    }
 
     if (provider === "custom") {
       if (!customEndpoint) {

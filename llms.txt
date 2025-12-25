@@ -82,6 +82,7 @@ const client = new GLabsClient(config: GLabsClientConfig);
 | `maxRetries` | `number` | No | Max polling retries |
 | `customEndpoint` | `string` | Conditional | Endpoint URL (required for custom provider) |
 | `jwtToken` | `string` | Conditional | JWT token (required for veo3solver) |
+| `staticToken` | `string` | No | Static token to use directly (bypasses provider, useful for testing) |
 
 ### Static Methods
 
