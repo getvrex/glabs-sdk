@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/getvrex/glabs-sdk/compare/v1.1.0...v1.2.0) (2025-12-25)
+
+
+### Features
+
+* **recaptcha:** add staticToken option for direct token usage ([ddf57e4](https://github.com/getvrex/glabs-sdk/commit/ddf57e400e12aa3e52aba432a7e053a50996b4ff))
+
 ## [1.1.0](https://github.com/getvrex/glabs-sdk/compare/v1.0.1...v1.1.0) (2025-12-24)
 
 
