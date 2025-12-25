@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/getvrex/glabs-sdk/compare/v1.3.0...v1.3.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* **projects:** use sessionToken for project API authentication ([db23cb4](https://github.com/getvrex/glabs-sdk/commit/db23cb410dcdcbaebcb5221182a2ce0dbfd20db5))
+
 ## [1.3.0](https://github.com/getvrex/glabs-sdk/compare/v1.2.0...v1.3.0) (2025-12-25)
 
 
