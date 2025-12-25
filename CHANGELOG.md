@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/getvrex/glabs-sdk/compare/v1.2.0...v1.3.0) (2025-12-25)
+
+
+### Features
+
+* **projects:** add ProjectService with auto-projectId resolution ([a297472](https://github.com/getvrex/glabs-sdk/commit/a2974726894acad754735dfafc6e032df482896d))
+
 ## [1.2.0](https://github.com/getvrex/glabs-sdk/compare/v1.1.0...v1.2.0) (2025-12-25)
 
 
