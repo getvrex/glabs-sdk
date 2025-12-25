@@ -23,14 +23,14 @@ import { GLabsClient } from '@getvrex/glabs-sdk';
 const client = new GLabsClient({
   bearerToken: 'your-token',
   accountTier: 'pro',
-  projectId: 'your-project-id',
+  // projectId is optional - auto-selects first available project if not provided
   recaptcha: {
     provider: 'regotcha', // Recommended: regotcha or capsolver
     apiKey: 'your-api-key',
   },
 });
 
-// Generate an image
+// Generate an image (auto-selects project if not specified)
 const result = await client.images.generate({
   prompt: 'A beautiful sunset over mountains',
   sessionId: GLabsClient.generateSessionId(),
@@ -51,6 +51,13 @@ const status = await client.videos.checkStatus({
 ```
 
 ## Features
+
+### Project Management
+
+- `client.projects.list()` - List user projects with pagination
+- `client.projects.get({ projectId })` - Get specific project details
+- `client.projects.getFirstProjectId()` - Get first available project (cached)
+- **Auto-resolution**: All generation methods auto-select first project if none provided
 
 ### Image Generation
 
@@ -102,6 +109,10 @@ import type {
   GenerateImageOptions,
   GenerateTextToVideoOptions,
   VideoStatusResult,
+  // Project types
+  Project,
+  ListProjectsOptions,
+  ListProjectsResult,
 } from '@getvrex/glabs-sdk/types';
 ```
 

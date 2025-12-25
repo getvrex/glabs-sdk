@@ -36,6 +36,17 @@ export type {
   UploadImageOptions,
   UploadImageResult,
 } from "./image";
+// Project types
+export type {
+  GetProjectOptions,
+  GetProjectResult,
+  ListProjectsOptions,
+  ListProjectsResult,
+  Project,
+  ProjectClip,
+  ProjectInfo,
+  ProjectScene,
+} from "./project";
 // reCAPTCHA types
 export type {
   CapSolverCreateTaskResponse,

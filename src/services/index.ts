@@ -4,6 +4,8 @@
 
 export type { ImageServiceOptions } from "./image.service";
 export { ImageService } from "./image.service";
+export type { ProjectServiceOptions } from "./project.service";
+export { ProjectService } from "./project.service";
 export type { RecaptchaServiceOptions } from "./recaptcha.service";
 export {
   defaultRecaptchaProvider,

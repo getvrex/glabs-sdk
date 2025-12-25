@@ -22,14 +22,14 @@ import { GLabsClient } from '@getvrex/glabs-sdk';
 const client = new GLabsClient({
   bearerToken: 'your-token',
   accountTier: 'pro',
-  projectId: 'your-project-id',
+  // projectId is optional - auto-selects first available if not provided
   recaptcha: {
     provider: 'regotcha', // or 'capsolver'
     apiKey: 'your-api-key',
   },
 });
 
-// Generate image
+// Generate image (auto-selects project if not specified)
 const imageResult = await client.images.generate({
   prompt: 'A beautiful sunset over mountains',
   sessionId: GLabsClient.generateSessionId(),
@@ -65,7 +65,7 @@ const client = new GLabsClient(config: GLabsClientConfig);
 |----------|------|----------|---------|-------------|
 | `bearerToken` | `string` | Yes | - | Authentication bearer token |
 | `accountTier` | `'pro' \| 'ultra'` | No | `'pro'` | Account subscription tier |
-| `projectId` | `string` | No | - | Default project ID for requests |
+| `projectId` | `string` | No | - | Default project ID (auto-selects first if not provided) |
 | `recaptcha` | `RecaptchaConfig` | No | - | reCAPTCHA solver configuration |
 | `logger` | `GLabsLogger` | No | console | Custom logger instance |
 | `timeout` | `number` | No | `120000` | Request timeout in ms |
@@ -90,6 +90,96 @@ const client = new GLabsClient(config: GLabsClientConfig);
 // Generate unique session ID
 const sessionId = GLabsClient.generateSessionId();
 ```
+
+---
+
+## Project API
+
+### client.projects.list(options?)
+
+List user projects with pagination.
+
+```typescript
+const result = await client.projects.list({
+  pageSize: 20,  // Optional: default 20
+  cursor: 'next-page-cursor',  // Optional: for pagination
+});
+
+console.log(result.projects);  // Array of Project objects
+console.log(result.nextCursor);  // Use for next page
+```
+
+**Options (ListProjectsOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `pageSize` | `number` | No | Number of projects per page (default: 20) |
+| `cursor` | `string` | No | Pagination cursor |
+
+**Returns (ListProjectsResult):**
+
+```typescript
+{
+  projects: [
+    {
+      projectId: string;
+      projectInfo: {
+        projectTitle: string;
+        thumbnailMediaKey?: string;
+      };
+      creationTime: string;
+      scenes?: ProjectScene[];
+    }
+  ],
+  nextCursor?: string;
+}
+```
+
+### client.projects.get(options)
+
+Get specific project by ID.
+
+```typescript
+const project = await client.projects.get({
+  projectId: 'project-uuid',
+});
+```
+
+**Options (GetProjectOptions):**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `projectId` | `string` | Yes | Project ID |
+
+**Returns (GetProjectResult):**
+
+```typescript
+{
+  projectId: string;
+  projectInfo: {
+    projectTitle: string;
+    thumbnailMediaKey?: string;
+  };
+}
+```
+
+### client.projects.getFirstProjectId()
+
+Get first available project ID (cached after first call).
+
+```typescript
+const projectId = await client.projects.getFirstProjectId();
+```
+
+### client.projects.clearCache()
+
+Clear cached first project ID.
+
+```typescript
+client.projects.clearCache();
+```
+
+**Note:** All generation methods (`images.generate()`, `videos.generateTextToVideo()`, etc.) automatically call `getFirstProjectId()` if no projectId is provided.
 
 ---
 
@@ -530,6 +620,16 @@ import type {
   VideoStatus,
   ReshootMotionType,
 
+  // Project
+  Project,
+  ProjectInfo,
+  ProjectScene,
+  ProjectClip,
+  ListProjectsOptions,
+  ListProjectsResult,
+  GetProjectOptions,
+  GetProjectResult,
+
   // Image
   GenerateImageOptions,
   GenerateImageResult,
@@ -572,7 +672,7 @@ import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
 const client = new GLabsClient({
   bearerToken: process.env.GLABS_TOKEN!,
   accountTier: 'pro',
-  projectId: process.env.PROJECT_ID!,
+  // projectId is optional - auto-selects first available project
   recaptcha: {
     provider: 'regotcha',
     apiKey: process.env.RECAPTCHA_API_KEY!,
@@ -644,9 +744,10 @@ async function generateVideo() {
 
 ---
 
-## API Base URL
+## API Base URLs
 
-All requests go to: `https://aisandbox-pa.googleapis.com/v1`
+- Media generation: `https://aisandbox-pa.googleapis.com/v1`
+- Projects (tRPC): `https://labs.google/fx/api/trpc`
 
 ## reCAPTCHA Providers
 

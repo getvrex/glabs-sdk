@@ -5,6 +5,9 @@
 /** Google Labs API base URL */
 export const GLABS_API_BASE = "https://aisandbox-pa.googleapis.com/v1";
 
+/** Google Labs FX API base URL (for projects) */
+export const GLABS_FX_API_BASE = "https://labs.google/fx/api/trpc";
+
 /** API Endpoints */
 export const ENDPOINTS = {
   // Image endpoints
@@ -24,6 +27,10 @@ export const ENDPOINTS = {
   UPSAMPLE_VIDEO: `${GLABS_API_BASE}/video:batchAsyncGenerateVideoUpsampleVideo`,
   REFERENCE_IMAGES_VIDEO: `${GLABS_API_BASE}/video:batchAsyncGenerateVideoReferenceImages`,
   CHECK_VIDEO_STATUS: `${GLABS_API_BASE}/video:batchCheckAsyncVideoGenerationStatus`,
+
+  // Project endpoints (tRPC)
+  SEARCH_USER_PROJECTS: `${GLABS_FX_API_BASE}/project.searchUserProjects`,
+  GET_PROJECT: `${GLABS_FX_API_BASE}/project.getProject`,
 } as const;
 
 /** reCAPTCHA service URLs */

@@ -41,7 +41,12 @@
  */
 
 import { DEFAULTS } from "./constants";
-import { ImageService, RecaptchaService, VideoService } from "./services";
+import {
+  ImageService,
+  ProjectService,
+  RecaptchaService,
+  VideoService,
+} from "./services";
 import type {
   GLabsClientConfig,
   GLabsLogger,
@@ -55,6 +60,12 @@ import type {
   UploadImageOptions,
   UploadImageResult,
 } from "./types/image";
+import type {
+  GetProjectOptions,
+  GetProjectResult,
+  ListProjectsOptions,
+  ListProjectsResult,
+} from "./types/project";
 import type {
   CheckVideoStatusOptions,
   ExtendVideoOptions,
@@ -85,6 +96,7 @@ export class GLabsClient {
   private readonly recaptchaService: RecaptchaService;
   private readonly imageService: ImageService;
   private readonly videoService: VideoService;
+  private readonly projectService: ProjectService;
 
   /**
    * Create a new GLabs client
@@ -101,6 +113,9 @@ export class GLabsClient {
     this.videoService = new VideoService({
       config: this.config,
       recaptchaService: this.recaptchaService,
+    });
+    this.projectService = new ProjectService({
+      config: this.config,
     });
   }
 
@@ -141,6 +156,51 @@ export class GLabsClient {
     return this.config.projectId;
   }
 
+  /**
+   * Resolve project ID - uses provided, then config, then fetches first available
+   */
+  private async resolveProjectId(providedProjectId?: string): Promise<string> {
+    if (providedProjectId) {
+      return providedProjectId;
+    }
+    if (this.config.projectId) {
+      return this.config.projectId;
+    }
+    return this.projectService.getFirstProjectId();
+  }
+
+  // =========================================================================
+  // Project API
+  // =========================================================================
+
+  /**
+   * Project management APIs
+   */
+  readonly projects = {
+    /**
+     * List user projects
+     */
+    list: (options?: ListProjectsOptions): Promise<ListProjectsResult> =>
+      this.projectService.listProjects(options),
+
+    /**
+     * Get a specific project by ID
+     */
+    get: (options: GetProjectOptions): Promise<GetProjectResult> =>
+      this.projectService.getProject(options),
+
+    /**
+     * Get the first available project ID (cached after first call)
+     */
+    getFirstProjectId: (): Promise<string> =>
+      this.projectService.getFirstProjectId(),
+
+    /**
+     * Clear the cached first project ID
+     */
+    clearCache: (): void => this.projectService.clearCache(),
+  };
+
   // =========================================================================
   // Image API
   // =========================================================================
@@ -163,16 +223,12 @@ export class GLabsClient {
 
     /**
      * Generate images from a prompt
+     * If no projectId provided, auto-selects first available project
      */
-    generate: (
+    generate: async (
       options: Omit<GenerateImageOptions, "projectId"> & { projectId?: string }
     ): Promise<GenerateImageResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.imageService.generateImage({
         ...options,
         projectId,
@@ -190,19 +246,15 @@ export class GLabsClient {
   readonly videos = {
     /**
      * Generate video from text prompt
+     * If no projectId provided, auto-selects first available project
      */
-    generateTextToVideo: (
+    generateTextToVideo: async (
       options: Omit<GenerateTextToVideoOptions, "projectId" | "accountTier"> & {
         projectId?: string;
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.generateTextToVideo({
         ...options,
         projectId,
@@ -212,8 +264,9 @@ export class GLabsClient {
 
     /**
      * Generate video from image (first frame or first+last frame)
+     * If no projectId provided, auto-selects first available project
      */
-    generateImageToVideo: (
+    generateImageToVideo: async (
       options: Omit<
         GenerateImageToVideoOptions,
         "projectId" | "accountTier"
@@ -222,12 +275,7 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.generateImageToVideo({
         ...options,
         projectId,
@@ -237,19 +285,15 @@ export class GLabsClient {
 
     /**
      * Extend an existing video
+     * If no projectId provided, auto-selects first available project
      */
-    extend: (
+    extend: async (
       options: Omit<ExtendVideoOptions, "projectId" | "accountTier"> & {
         projectId?: string;
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.extendVideo({
         ...options,
         projectId,
@@ -259,19 +303,15 @@ export class GLabsClient {
 
     /**
      * Apply camera control reshoot to a video
+     * If no projectId provided, auto-selects first available project
      */
-    reshoot: (
+    reshoot: async (
       options: Omit<ReshootVideoOptions, "projectId" | "accountTier"> & {
         projectId?: string;
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.reshootVideo({
         ...options,
         projectId,
@@ -294,8 +334,9 @@ export class GLabsClient {
 
     /**
      * Generate video from reference images (1-3 images)
+     * If no projectId provided, auto-selects first available project
      */
-    generateReferenceImagesVideo: (
+    generateReferenceImagesVideo: async (
       options: Omit<
         GenerateReferenceImagesVideoOptions,
         "projectId" | "accountTier"
@@ -304,12 +345,7 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      const projectId = options.projectId ?? this.config.projectId;
-      if (!projectId) {
-        throw new Error(
-          "projectId is required. Either pass it in options or configure it in the client."
-        );
-      }
+      const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.generateReferenceImagesVideo({
         ...options,
         projectId,
