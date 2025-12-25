@@ -7,8 +7,10 @@ import type { RecaptchaConfig } from "./recaptcha";
 
 /** Configuration for the GLabs client */
 export type GLabsClientConfig = {
-  /** Bearer token for authentication */
+  /** Bearer token for authentication (Google AI APIs) */
   bearerToken: string;
+  /** Session token for project API (__Secure-next-auth.session-token cookie value) */
+  sessionToken?: string;
   /** Account tier (pro or ultra) */
   accountTier?: AccountTier;
   /** Project ID (optional, can be provided per-request) */
@@ -35,6 +37,7 @@ export type GLabsLogger = {
 /** Internal resolved configuration */
 export type ResolvedConfig = {
   bearerToken: string;
+  sessionToken?: string;
   accountTier: AccountTier;
   projectId?: string;
   recaptcha?: RecaptchaConfig;

@@ -48,10 +48,16 @@ export class ProjectService {
    * Build headers for project API requests
    */
   private buildHeaders(): Record<string, string> {
+    if (!this.config.sessionToken) {
+      throw new GLabsError(
+        "sessionToken is required for project API. Get it from __Secure-next-auth.session-token cookie at labs.google",
+        "SESSION_TOKEN_REQUIRED"
+      );
+    }
     return {
       Accept: "*/*",
       "Content-Type": "application/json",
-      Cookie: `__Secure-next-auth.session-token=${this.config.bearerToken}`,
+      Cookie: `__Secure-next-auth.session-token=${this.config.sessionToken}`,
     };
   }
 

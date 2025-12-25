@@ -21,7 +21,8 @@ npm install @getvrex/glabs-sdk
 import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
-  bearerToken: 'your-token',
+  bearerToken: 'your-bearer-token',    // For image/video generation APIs
+  sessionToken: 'your-session-token',  // For project API (from __Secure-next-auth.session-token cookie)
   accountTier: 'pro',
   // projectId is optional - auto-selects first available project if not provided
   recaptcha: {
@@ -79,13 +80,14 @@ const status = await client.videos.checkStatus({
 
 ```typescript
 interface GLabsClientConfig {
-  bearerToken: string;           // Required: Auth token
+  bearerToken: string;           // Required: Auth token for image/video APIs
+  sessionToken?: string;         // Session token for project API (from cookie)
   accountTier?: AccountTier;     // 'free' | 'pro' | 'ultra' (default: 'pro')
   projectId?: string;            // Default project ID
   recaptcha?: RecaptchaConfig;   // reCAPTCHA config for rate limiting
-  timeout?: number;              // Request timeout (default: 30000)
-  maxRetries?: number;           // Max retries (default: 3)
-  retryDelay?: number;           // Retry delay ms (default: 1000)
+  timeout?: number;              // Request timeout (default: 120000)
+  maxRetries?: number;           // Max retries (default: 2)
+  retryDelay?: number;           // Retry delay ms (default: 1500)
   logger?: GLabsLogger;          // Custom logger
 }
 ```

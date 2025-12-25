@@ -20,7 +20,8 @@ Configure `.npmrc` for private package:
 import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
-  bearerToken: 'your-token',
+  bearerToken: 'your-bearer-token',    // For image/video generation APIs
+  sessionToken: 'your-session-token',  // For project API (from __Secure-next-auth.session-token cookie)
   accountTier: 'pro',
   // projectId is optional - auto-selects first available if not provided
   recaptcha: {
@@ -63,7 +64,8 @@ const client = new GLabsClient(config: GLabsClientConfig);
 
 | Property | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `bearerToken` | `string` | Yes | - | Authentication bearer token |
+| `bearerToken` | `string` | Yes | - | Auth token for image/video generation APIs |
+| `sessionToken` | `string` | No | - | Session token for project API (from `__Secure-next-auth.session-token` cookie) |
 | `accountTier` | `'pro' \| 'ultra'` | No | `'pro'` | Account subscription tier |
 | `projectId` | `string` | No | - | Default project ID (auto-selects first if not provided) |
 | `recaptcha` | `RecaptchaConfig` | No | - | reCAPTCHA solver configuration |
@@ -180,6 +182,8 @@ client.projects.clearCache();
 ```
 
 **Note:** All generation methods (`images.generate()`, `videos.generateTextToVideo()`, etc.) automatically call `getFirstProjectId()` if no projectId is provided.
+
+**Getting sessionToken:** Open labs.google in browser, open DevTools > Application > Cookies, copy the value of `__Secure-next-auth.session-token`.
 
 ---
 
@@ -671,8 +675,9 @@ import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
   bearerToken: process.env.GLABS_TOKEN!,
+  sessionToken: process.env.GLABS_SESSION_TOKEN,  // Optional: for auto-projectId
   accountTier: 'pro',
-  // projectId is optional - auto-selects first available project
+  // projectId is optional - auto-selects first available project if sessionToken provided
   recaptcha: {
     provider: 'regotcha',
     apiKey: process.env.RECAPTCHA_API_KEY!,

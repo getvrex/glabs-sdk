@@ -125,6 +125,7 @@ export class GLabsClient {
   private resolveConfig(config: GLabsClientConfig): ResolvedConfig {
     return {
       bearerToken: config.bearerToken,
+      sessionToken: config.sessionToken,
       accountTier: config.accountTier ?? "pro",
       projectId: config.projectId,
       recaptcha: config.recaptcha,
