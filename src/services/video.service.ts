@@ -90,7 +90,11 @@ export class VideoService {
       recaptchaResult: RecaptchaTokenResult
     ) => Promise<VideoApiCallResult>
   ): Promise<VideoOperationResult> {
-    const maxEvalRetries = DEFAULTS.RECAPTCHA_EVAL_MAX_RETRIES;
+    // Don't retry if using static token - it won't change between attempts
+    const usingStaticToken = Boolean(this.config.recaptcha?.staticToken);
+    const maxEvalRetries = usingStaticToken
+      ? 1
+      : DEFAULTS.RECAPTCHA_EVAL_MAX_RETRIES;
 
     for (let attempt = 1; attempt <= maxEvalRetries; attempt++) {
       this.logger.log(
@@ -108,8 +112,14 @@ export class VideoService {
 
       const errorData = await response.json().catch(() => ({}));
 
-      // If reCAPTCHA evaluation failed, retry with new token
+      // If reCAPTCHA evaluation failed, retry with new token (unless using static token)
       if (isRecaptchaEvaluationFailed(response.status, errorData)) {
+        if (usingStaticToken) {
+          this.logger.error(
+            `[Video] ${operationName}: reCAPTCHA evaluation failed with static token - not retrying`
+          );
+          throw parseGoogleApiError(errorData, response.status);
+        }
         this.logger.warn(
           `[Video] ${operationName}: reCAPTCHA evaluation failed (attempt ${attempt}/${maxEvalRetries}), retrying with new token...`
         );

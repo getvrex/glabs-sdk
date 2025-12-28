@@ -241,7 +241,12 @@ export class ImageService {
     });
 
     const url = ENDPOINTS.BATCH_GENERATE_IMAGES(projectId.trim());
-    const maxEvalRetries = DEFAULTS.RECAPTCHA_EVAL_MAX_RETRIES;
+
+    // Don't retry if using static token - it won't change between attempts
+    const usingStaticToken = Boolean(this.config.recaptcha.staticToken);
+    const maxEvalRetries = usingStaticToken
+      ? 1
+      : DEFAULTS.RECAPTCHA_EVAL_MAX_RETRIES;
 
     // Retry loop for reCAPTCHA evaluation failures
     for (let attempt = 1; attempt <= maxEvalRetries; attempt++) {
@@ -276,8 +281,14 @@ export class ImageService {
 
       const errorData = await response.json().catch(() => ({}));
 
-      // If reCAPTCHA evaluation failed, retry with new token
+      // If reCAPTCHA evaluation failed, retry with new token (unless using static token)
       if (isRecaptchaEvaluationFailed(response.status, errorData)) {
+        if (usingStaticToken) {
+          this.logger.error(
+            "[Image] reCAPTCHA evaluation failed with static token - not retrying"
+          );
+          throw parseGoogleApiError(errorData, response.status);
+        }
         this.logger.warn(
           `[Image] reCAPTCHA evaluation failed (attempt ${attempt}/${maxEvalRetries}), retrying with new token...`
         );
