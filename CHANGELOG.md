@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/getvrex/glabs-sdk/compare/v1.3.1...v1.3.2) (2025-12-28)
+
+
+### Bug Fixes
+
+* **recaptcha:** skip retry on failure when using static token ([0c42bbb](https://github.com/getvrex/glabs-sdk/commit/0c42bbbf199440471c51f5e7174d7c4578f42efc))
+
 ## [1.3.1](https://github.com/getvrex/glabs-sdk/compare/v1.3.0...v1.3.1) (2025-12-25)
 
 
