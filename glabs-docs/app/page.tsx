@@ -40,28 +40,107 @@ export default function HomePage() {
         </div>
 
         {/* Code snippet */}
-        <div className="mt-16 w-full max-w-2xl overflow-hidden rounded-lg border bg-card">
+        <div className="mt-16 w-full max-w-2xl overflow-hidden rounded-lg border bg-card text-left">
           <div className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2">
-            <span className="text-xs text-muted-foreground">Quick Start</span>
+            <div className="flex gap-1.5">
+              <span className="h-3 w-3 rounded-full bg-red-500/80" />
+              <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
+              <span className="h-3 w-3 rounded-full bg-green-500/80" />
+            </div>
+            <span className="ml-2 text-xs text-muted-foreground">Quick Start</span>
           </div>
-          <pre className="overflow-x-auto p-4 text-sm">
-            <code className="text-foreground">{`import { GLabsClient } from '@getvrex/glabs-sdk';
-
-const client = new GLabsClient({
-  bearerToken: process.env.GLABS_BEARER_TOKEN,
-  accountTier: 'pro',
-  recaptcha: {
-    provider: 'regotcha',
-    apiKey: process.env.RECAPTCHA_API_KEY,
-  },
-});
-
-// Generate an image
-const result = await client.images.generate({
-  prompt: 'A beautiful sunset over mountains',
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-});`}</code>
+          <pre className="overflow-x-auto p-4 text-sm leading-relaxed">
+            <code>
+              <span className="text-purple-400">import</span>
+              <span className="text-foreground">{" { "}</span>
+              <span className="text-yellow-300">GLabsClient</span>
+              <span className="text-foreground">{" } "}</span>
+              <span className="text-purple-400">from</span>
+              <span className="text-green-400">{" '@getvrex/glabs-sdk'"}</span>
+              <span className="text-foreground">;</span>
+              {"\n\n"}
+              <span className="text-purple-400">const</span>
+              <span className="text-blue-300">{" client"}</span>
+              <span className="text-foreground">{" = "}</span>
+              <span className="text-purple-400">new</span>
+              <span className="text-yellow-300">{" GLabsClient"}</span>
+              <span className="text-foreground">{"({"}</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">bearerToken</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-blue-300">process</span>
+              <span className="text-foreground">.</span>
+              <span className="text-blue-300">env</span>
+              <span className="text-foreground">.</span>
+              <span className="text-blue-300">GLABS_BEARER_TOKEN</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">accountTier</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-green-400">{"'pro'"}</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">recaptcha</span>
+              <span className="text-foreground">{": {"}</span>
+              {"\n"}
+              <span className="text-foreground">{"    "}</span>
+              <span className="text-blue-300">provider</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-green-400">{"'regotcha'"}</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"    "}</span>
+              <span className="text-blue-300">apiKey</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-blue-300">process</span>
+              <span className="text-foreground">.</span>
+              <span className="text-blue-300">env</span>
+              <span className="text-foreground">.</span>
+              <span className="text-blue-300">RECAPTCHA_API_KEY</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"  },"}</span>
+              {"\n"}
+              <span className="text-foreground">{"});"}</span>
+              {"\n\n"}
+              <span className="text-gray-500">{"// Generate an image"}</span>
+              {"\n"}
+              <span className="text-purple-400">const</span>
+              <span className="text-blue-300">{" result"}</span>
+              <span className="text-foreground">{" = "}</span>
+              <span className="text-purple-400">await</span>
+              <span className="text-blue-300">{" client"}</span>
+              <span className="text-foreground">.</span>
+              <span className="text-blue-300">images</span>
+              <span className="text-foreground">.</span>
+              <span className="text-yellow-300">generate</span>
+              <span className="text-foreground">{"({"}</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">prompt</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-green-400">{"'A beautiful sunset over mountains'"}</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">sessionId</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-yellow-300">GLabsClient</span>
+              <span className="text-foreground">.</span>
+              <span className="text-yellow-300">generateSessionId</span>
+              <span className="text-foreground">{"(),"}</span>
+              {"\n"}
+              <span className="text-foreground">{"  "}</span>
+              <span className="text-blue-300">aspectRatio</span>
+              <span className="text-foreground">{": "}</span>
+              <span className="text-green-400">{"'16:9'"}</span>
+              <span className="text-foreground">,</span>
+              {"\n"}
+              <span className="text-foreground">{"});"}</span>
+            </code>
           </pre>
         </div>
       </section>
