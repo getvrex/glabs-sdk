@@ -1,0 +1,64 @@
+---
+title: GLabs SDK
+description: TypeScript SDK for Google Labs AI media generation APIs
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+# GLabs SDK
+
+`@getvrex/glabs-sdk` is a TypeScript SDK for interacting with Google Labs AI APIs for image and video generation.
+
+## Features
+
+- **Image Generation** - Generate AI images using Google's Imagen models
+- **Video Generation** - Create videos using Google's Veo models
+- **Multiple Video Modes** - Support for text-to-video, image-to-video, video extension, camera control, and more
+- **Account Tier Support** - Automatic handling of Free, Pro and Ultra tier differences
+- **reCAPTCHA Integration** - Built-in support for Regotcha, CapSolver, YesCaptcha, and custom providers
+- **Type-Safe** - Full TypeScript support with exported types
+- **Retry Logic** - Automatic retry on network errors
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: 'your-bearer-token',
+  accountTier: 'pro',
+  projectId: 'your-project-id',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'your-recaptcha-api-key',
+  },
+});
+
+// Generate an image
+const imageResult = await client.images.generate({
+  prompt: 'A beautiful sunset over mountains',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Generate a video
+const videoOp = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city at sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Check video status
+const status = await client.videos.checkStatus({
+  operationName: videoOp.operationName,
+});
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Getting Started" href="/docs/getting-started" description="Installation and setup guide" />
+  <Card title="Client Configuration" href="/docs/client" description="Configure the GLabs client" />
+  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen" />
+  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo" />
+</Cards>

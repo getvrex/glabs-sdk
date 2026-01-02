@@ -32,3 +32,9 @@ lerna-debug.log*
 .cache
 tmp
 temp
+
+# Documentation site
+glabs-docs/.next/
+glabs-docs/out/
+glabs-docs/.source/
+glabs-docs/node_modules/

@@ -1,0 +1,172 @@
+---
+title: Client Configuration
+description: Configure the GLabs client for your needs
+---
+
+# Client Configuration
+
+The `GLabsClient` is the main entry point for interacting with Google Labs APIs.
+
+## Constructor Options
+
+```typescript
+interface GLabsClientConfig {
+  // Required
+  bearerToken: string;
+
+  // Optional
+  sessionToken?: string;         // Session token for project API
+  accountTier?: 'free' | 'pro' | 'ultra';  // Default: 'pro'
+  projectId?: string;            // Can be provided per-request or auto-resolved
+  recaptcha?: RecaptchaConfig;   // Required for image/video generation
+  logger?: GLabsLogger;          // Default: console
+  timeout?: number;              // Default: 120000 (2 minutes)
+  maxRetries?: number;           // Default: 2
+  retryDelay?: number;           // Default: 1500 (1.5 seconds)
+}
+```
+
+## Account Tiers
+
+The SDK supports three account tiers with different capabilities:
+
+| Feature | Free | Pro | Ultra |
+|---------|------|-----|-------|
+| Video Modes | basic | quality, fast | quality, fast |
+| Default Video Mode | fast | fast | quality |
+| HD Upscaling | No | Yes | Yes |
+| Max Images Per Batch | 4 | 4 | 4 |
+
+```typescript
+// Free account
+const freeClient = new GLabsClient({
+  bearerToken: 'token',
+  accountTier: 'free',
+});
+
+// Pro account
+const proClient = new GLabsClient({
+  bearerToken: 'token',
+  accountTier: 'pro',
+});
+
+// Ultra account
+const ultraClient = new GLabsClient({
+  bearerToken: 'token',
+  accountTier: 'ultra',
+});
+```
+
+## reCAPTCHA Configuration
+
+Both image and video generation require reCAPTCHA verification. The SDK supports multiple providers:
+
+### Regotcha (Recommended)
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'your-regotcha-api-key',
+    maxRetries: 30, // Optional: max polling attempts
+  },
+});
+```
+
+### CapSolver (Recommended)
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'capsolver',
+    apiKey: 'your-capsolver-api-key',
+    proxy: 'http://user:pass@ip:port', // Optional: residential proxy
+    maxRetries: 30, // Optional: max polling attempts
+  },
+});
+```
+
+## Custom Logger
+
+You can provide a custom logger that implements the `GLabsLogger` interface:
+
+```typescript
+interface GLabsLogger {
+  log: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+}
+```
+
+Example with a custom logger:
+
+```typescript
+const customLogger = {
+  log: (msg, ...args) => console.log(`[GLabs] ${msg}`, ...args),
+  warn: (msg, ...args) => console.warn(`[GLabs] ${msg}`, ...args),
+  error: (msg, ...args) => console.error(`[GLabs] ${msg}`, ...args),
+};
+
+const client = new GLabsClient({
+  bearerToken: 'token',
+  logger: customLogger,
+});
+```
+
+## Silent Mode
+
+To disable logging:
+
+```typescript
+const silentLogger = {
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+};
+
+const client = new GLabsClient({
+  bearerToken: 'token',
+  logger: silentLogger,
+});
+```
+
+## Retry Configuration
+
+The SDK automatically retries on network errors:
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  maxRetries: 3,      // Number of retry attempts
+  retryDelay: 2000,   // Delay between retries in ms
+  timeout: 180000,    // Request timeout in ms
+});
+```
+
+## Client Properties
+
+Access client configuration:
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  accountTier: 'ultra',
+  projectId: 'my-project',
+});
+
+console.log(client.accountTier);  // 'ultra'
+console.log(client.projectId);    // 'my-project'
+```
+
+## Static Methods
+
+### generateSessionId
+
+Generate a unique session ID for API requests:
+
+```typescript
+const sessionId = GLabsClient.generateSessionId();
+// Example: '550e8400-e29b-41d4-a716-446655440000'
+```

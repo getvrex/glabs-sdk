@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install && pnpm build"
+
+[deploy]
+startCommand = "pnpm dlx serve out -l 3000"
+healthcheckPath = "/"
+healthcheckTimeout = 300

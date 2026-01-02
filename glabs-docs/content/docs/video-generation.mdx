@@ -1,0 +1,236 @@
+---
+title: Video Generation
+description: Generate AI videos with Google Labs Veo
+---
+
+# Video Generation
+
+Generate AI videos using Google's Veo models through the `client.videos` API.
+
+## Video Generation Types
+
+The SDK supports multiple video generation methods:
+
+| Method | Description |
+|--------|-------------|
+| `generateTextToVideo` | Generate video from text prompt |
+| `generateImageToVideo` | Generate video from image (first frame) |
+| `extend` | Extend an existing video |
+| `reshoot` | Apply camera control to video |
+| `upsample` | Upscale video to HD (1080p) |
+| `generateReferenceImagesVideo` | Generate video using reference images |
+
+## Text to Video
+
+Generate a video from a text description:
+
+```typescript
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city at golden hour',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  videoMode: 'quality', // or 'fast'
+});
+
+console.log(operation.operationName); // Use for status polling
+console.log(operation.sceneId);
+console.log(operation.status);
+console.log(operation.remainingCredits);
+```
+
+### Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `prompt` | `string` | Yes | Video description |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `AspectRatio` | Yes | Video aspect ratio |
+| `videoMode` | `VideoMode` | No | Generation mode |
+| `projectId` | `string` | No | Project ID |
+| `accountTier` | `AccountTier` | No | Account tier |
+| `seed` | `number` | No | Random seed |
+| `sceneId` | `string` | No | Scene identifier |
+
+## Image to Video
+
+Generate video from an image (first frame):
+
+```typescript
+// Upload or use existing image
+const imageResult = await client.images.upload({
+  imageBase64: myImage,
+  sessionId: GLabsClient.generateSessionId(),
+});
+
+// Generate video from image
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'The scene comes to life with gentle motion',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  startMediaId: imageResult.mediaId!,
+});
+```
+
+### First and Last Frame
+
+Generate video with both start and end frames:
+
+```typescript
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'Smooth transition from day to night',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  startMediaId: startImage.mediaId!,
+  endMediaId: endImage.mediaId!, // Enables FL (First-Last) mode
+});
+```
+
+## Extend Video
+
+Extend an existing video with new content:
+
+```typescript
+const operation = await client.videos.extend({
+  mediaId: existingVideo.mediaGenerationId!,
+  prompt: 'The camera continues forward revealing more of the landscape',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  startFrameIndex: 168, // Optional: default is 168
+  endFrameIndex: 191,   // Optional: default is 191
+});
+```
+
+## Camera Control (Reshoot)
+
+Apply camera movements to an existing video:
+
+```typescript
+const operation = await client.videos.reshoot({
+  mediaId: video.mediaGenerationId!,
+  reshootMotionType: 'RESHOOT_MOTION_TYPE_FORWARD',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+### Available Motion Types
+
+**Camera Control:**
+- `RESHOOT_MOTION_TYPE_UP`
+- `RESHOOT_MOTION_TYPE_DOWN`
+- `RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT`
+- `RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT`
+- `RESHOOT_MOTION_TYPE_FORWARD`
+- `RESHOOT_MOTION_TYPE_BACKWARD`
+- `RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT`
+- `RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE`
+
+**Stationary Camera:**
+- `RESHOOT_MOTION_TYPE_STATIONARY_UP`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOWN`
+- `RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
+
+## HD Upscaling
+
+Upscale a video to 1080p HD:
+
+```typescript
+const operation = await client.videos.upsample({
+  originalMediaId: video.mediaGenerationId!,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9', // Only 16:9 supported for upscaling
+});
+```
+
+## Reference Images Video
+
+Generate video using 1-3 reference images:
+
+```typescript
+const operation = await client.videos.generateReferenceImagesVideo({
+  prompt: 'An animated scene combining these visual styles',
+  referenceMediaIds: [
+    image1.mediaId!,
+    image2.mediaId!,
+    image3.mediaId!, // Maximum 3 images
+  ],
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+## Check Video Status
+
+Poll for video generation completion:
+
+```typescript
+const status = await client.videos.checkStatus({
+  operationName: operation.operationName,
+  sceneId: operation.sceneId, // Optional
+});
+
+console.log(status.status);            // Generation status
+console.log(status.videoUrl);          // Video URL when complete
+console.log(status.thumbnailUrl);      // Thumbnail URL
+console.log(status.duration);          // Duration in seconds
+console.log(status.mediaGenerationId); // Media ID for further operations
+console.log(status.error);             // Error message if failed
+console.log(status.remainingCredits);  // Remaining credits
+```
+
+### Status Values
+
+| Status | Description |
+|--------|-------------|
+| `MEDIA_GENERATION_STATUS_PENDING` | Generation queued |
+| `MEDIA_GENERATION_STATUS_ACTIVE` | Generation started |
+| `MEDIA_GENERATION_STATUS_PROCESSING` | Generation in progress |
+| `MEDIA_GENERATION_STATUS_SUCCESSFUL` | Video ready (success) |
+| `MEDIA_GENERATION_STATUS_COMPLETED` | Video ready (alternative) |
+| `MEDIA_GENERATION_STATUS_FAILED` | Generation failed |
+
+### Polling Example
+
+```typescript
+async function waitForVideo(operationName: string): Promise<VideoStatusResult> {
+  const maxAttempts = 60;
+  const pollInterval = 5000; // 5 seconds
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const status = await client.videos.checkStatus({ operationName });
+
+    // Check for success (API may return either status)
+    if (
+      status.status === 'MEDIA_GENERATION_STATUS_SUCCESSFUL' ||
+      status.status === 'MEDIA_GENERATION_STATUS_COMPLETED'
+    ) {
+      return status;
+    }
+
+    if (status.status === 'MEDIA_GENERATION_STATUS_FAILED') {
+      throw new Error(status.error ?? 'Video generation failed');
+    }
+
+    // Still processing (PENDING, ACTIVE, or PROCESSING)
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error('Video generation timed out');
+}
+
+const operation = await client.videos.generateTextToVideo({...});
+const result = await waitForVideo(operation.operationName);
+console.log('Video URL:', result.videoUrl);
+```
+
+## Video Modes
+
+| Mode | Description |
+|------|-------------|
+| `quality` | Higher quality, slower generation |
+| `fast` | Lower quality, faster generation |
+
+Note: Pro accounts default to `fast` mode, Ultra accounts default to `quality` mode.

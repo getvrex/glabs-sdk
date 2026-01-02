@@ -1,0 +1,146 @@
+---
+title: Getting Started
+description: Install and configure the GLabs SDK
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Getting Started
+
+This guide will help you install and configure the GLabs SDK in your project.
+
+## Installation
+
+Install the package using your preferred package manager:
+
+```bash
+# Using bun
+bun add @getvrex/glabs-sdk
+
+# Using npm
+npm install @getvrex/glabs-sdk
+
+# Using pnpm
+pnpm add @getvrex/glabs-sdk
+
+# Using yarn
+yarn add @getvrex/glabs-sdk
+```
+
+<Callout type="info">
+This is a private package. Configure your `.npmrc`:
+```
+@getvrex:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+</Callout>
+
+## Prerequisites
+
+Before using the SDK, you'll need:
+
+1. **Bearer Token** - A valid authentication token from Google Labs
+2. **reCAPTCHA Provider** (Required) - An API key from Regotcha, CapSolver, or YesCaptcha for solving reCAPTCHA challenges. Both image and video generation require reCAPTCHA verification.
+3. **Project ID** - Your Google Labs project identifier (optional, can be provided per-request or auto-resolved)
+
+## Basic Setup
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  // Required: Your authentication token
+  bearerToken: process.env.GLABS_BEARER_TOKEN!,
+
+  // Required: reCAPTCHA solver configuration (for both image and video generation)
+  recaptcha: {
+    provider: 'regotcha', // Recommended: 'regotcha' or 'capsolver'
+    apiKey: process.env.RECAPTCHA_API_KEY!,
+  },
+
+  // Optional: Account tier (defaults to 'pro')
+  accountTier: 'pro',
+
+  // Optional: Default project ID (auto-resolves if not provided)
+  projectId: process.env.GLABS_PROJECT_ID,
+
+  // Optional: Request timeout in milliseconds (default: 120000)
+  timeout: 120000,
+
+  // Optional: Custom logger
+  logger: console,
+});
+```
+
+## Environment Variables
+
+We recommend using environment variables for sensitive configuration:
+
+```bash
+# .env
+GLABS_BEARER_TOKEN=your-bearer-token
+GLABS_PROJECT_ID=your-project-id
+RECAPTCHA_API_KEY=your-recaptcha-api-key
+RECAPTCHA_PROVIDER=regotcha
+```
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_BEARER_TOKEN!,
+  projectId: process.env.GLABS_PROJECT_ID,
+  recaptcha: {
+    provider: process.env.RECAPTCHA_PROVIDER as 'regotcha' | 'capsolver',
+    apiKey: process.env.RECAPTCHA_API_KEY!,
+  },
+});
+```
+
+## Session Management
+
+Each API request requires a session ID. You can generate one using the static method:
+
+```typescript
+const sessionId = GLabsClient.generateSessionId();
+```
+
+Or you can use your own UUID generation:
+
+```typescript
+import { randomUUID } from 'crypto';
+const sessionId = randomUUID();
+```
+
+## Error Handling
+
+The SDK throws `GLabsError` for API errors:
+
+```typescript
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
+
+try {
+  const result = await client.images.generate({
+    prompt: 'test image',
+    sessionId: GLabsClient.generateSessionId(),
+    aspectRatio: '16:9',
+  });
+} catch (error) {
+  if (error instanceof GLabsError) {
+    console.error('API Error:', error.message);
+    console.error('Error Code:', error.code);
+    console.error('Status Code:', error.statusCode);
+  } else {
+    throw error;
+  }
+}
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Client Configuration" href="/docs/client" description="Advanced client options" />
+  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen" />
+  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo" />
+</Cards>

@@ -1,0 +1,181 @@
+---
+title: Image Generation
+description: Generate AI images with Google Labs Imagen
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Image Generation
+
+Generate AI images using Google's Imagen models through the `client.images` API.
+
+<Callout type="info">
+Image generation requires reCAPTCHA configuration. See [reCAPTCHA Configuration](/docs/recaptcha) for setup instructions.
+</Callout>
+
+## Upload Image
+
+Upload an image for use as a reference in generation:
+
+```typescript
+const result = await client.images.upload({
+  imageBase64: 'base64-encoded-image-data',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9', // Optional: '16:9' | '9:16' | '1:1'
+});
+
+console.log(result.mediaId);           // Use this ID as a reference
+console.log(result.mediaGenerationId); // Same as mediaId
+console.log(result.width);             // Image width
+console.log(result.height);            // Image height
+```
+
+### Upload Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `imageBase64` | `string` | Yes | Base64-encoded image (with or without data URL prefix) |
+| `sessionId` | `string` | Yes | Unique session identifier |
+| `aspectRatio` | `AspectRatio` | No | Target aspect ratio |
+
+## Generate Images
+
+Generate images from a text prompt:
+
+```typescript
+const result = await client.images.generate({
+  prompt: 'A majestic mountain landscape at sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  count: 4,         // Generate 4 images
+  model: 'nanobanana', // or 'nanobananapro'
+});
+
+for (const image of result.images) {
+  console.log(image.encodedImage); // Base64 image data
+  console.log(image.mediaId);      // Media ID for video generation
+  console.log(image.fifeUrl);      // CDN URL if available
+}
+```
+
+### Generate Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `prompt` | `string` | Yes | Description of the image to generate |
+| `sessionId` | `string` | Yes | Unique session identifier |
+| `aspectRatio` | `AspectRatio` | Yes | Image aspect ratio |
+| `projectId` | `string` | No* | Project ID (auto-resolves if not provided) |
+| `references` | `ImageReference[]` | No | Reference images for style |
+| `seed` | `number` | No | Random seed for reproducibility |
+| `count` | `number` | No | Number of images (1-4, default: 1) |
+| `model` | `ImageModel` | No | Model to use |
+| `prompts` | `string[]` | No | Different prompts for each image |
+
+\* Auto-resolves to first available project if not set in client config
+
+## Using Reference Images
+
+Generate images inspired by uploaded references:
+
+```typescript
+// First, upload reference images
+const ref1 = await client.images.upload({
+  imageBase64: styleImage,
+  sessionId: GLabsClient.generateSessionId(),
+});
+
+// Generate using reference
+const result = await client.images.generate({
+  prompt: 'A similar landscape in winter',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  references: [
+    { mediaId: ref1.mediaId },
+  ],
+});
+```
+
+## Multiple Different Prompts
+
+Generate images with different prompts in a single request:
+
+```typescript
+const result = await client.images.generate({
+  prompt: 'fallback prompt', // Used if prompts array is short
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  prompts: [
+    'A cat sitting on a windowsill',
+    'A dog playing in the park',
+    'A bird flying over the ocean',
+    'A fish swimming in a coral reef',
+  ],
+});
+
+// result.images[0] -> cat
+// result.images[1] -> dog
+// result.images[2] -> bird
+// result.images[3] -> fish
+```
+
+## Check Credit Status
+
+Check your account's credit balance:
+
+```typescript
+const credits = await client.images.getCreditStatus();
+
+console.log(credits.credits);                    // Remaining credits
+console.log(credits.userPaygateTier);            // Payment tier
+console.log(credits.g1MembershipState);          // Membership state
+console.log(credits.isUserAnimateCountryEnabled); // Animate feature access
+```
+
+## Image Models
+
+| Model | Description |
+|-------|-------------|
+| `nanobanana` | Standard Imagen model (GEM_PIX) |
+| `nanobananapro` | Enhanced Imagen model (GEM_PIX_2) |
+
+## Aspect Ratios
+
+| Ratio | Description |
+|-------|-------------|
+| `16:9` | Landscape (default) |
+| `9:16` | Portrait |
+| `1:1` | Square |
+
+## Error Handling
+
+```typescript
+import { GLabsError } from '@getvrex/glabs-sdk';
+
+try {
+  const result = await client.images.generate({
+    prompt: 'test',
+    sessionId: GLabsClient.generateSessionId(),
+    aspectRatio: '16:9',
+  });
+} catch (error) {
+  if (error instanceof GLabsError) {
+    switch (error.code) {
+      case 'INVALID_ARGUMENT':
+        console.error('Content violates policy');
+        break;
+      case 'HIGH_TRAFFIC':
+        console.error('Service busy, try again later');
+        break;
+      case 'RECAPTCHA_REQUIRED':
+        console.error('Configure reCAPTCHA provider');
+        break;
+      case 'RECAPTCHA_EVAL_FAILED':
+        console.error('reCAPTCHA evaluation failed after retries');
+        break;
+      default:
+        console.error('Error:', error.message);
+    }
+  }
+}
+```
