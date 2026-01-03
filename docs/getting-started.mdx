@@ -71,7 +71,7 @@ We recommend using environment variables for sensitive configuration:
 GLABS_BEARER_TOKEN=your-bearer-token
 GLABS_PROJECT_ID=your-project-id
 RECAPTCHA_API_KEY=your-recaptcha-api-key
-RECAPTCHA_PROVIDER=yescaptcha
+RECAPTCHA_PROVIDER=regotcha
 ```
 
 ```typescript
@@ -81,7 +81,7 @@ const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
   projectId: process.env.GLABS_PROJECT_ID,
   recaptcha: {
-    provider: process.env.RECAPTCHA_PROVIDER as 'yescaptcha' | 'capsolver',
+    provider: process.env.RECAPTCHA_PROVIDER as 'regotcha' | 'capsolver',
     apiKey: process.env.RECAPTCHA_API_KEY!,
   },
 });
