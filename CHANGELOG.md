@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/getvrex/glabs-sdk/compare/v1.4.0...v1.5.0) (2026-01-03)
+
+
+### Features
+
+* **docs:** add LLM-friendly documentation and update logo ([33a4efe](https://github.com/getvrex/glabs-sdk/commit/33a4efe6eb2206dcc43e43a749cb2dd915d754b7))
+
+
+### Bug Fixes
+
+* **docs:** update reCAPTCHA provider examples to use regotcha ([b2cf081](https://github.com/getvrex/glabs-sdk/commit/b2cf0818f418f6dce8c39ccd8c4a88286ae48631))
+
 ## [1.4.0](https://github.com/getvrex/glabs-sdk/compare/v1.3.2...v1.4.0) (2026-01-03)
 
 
