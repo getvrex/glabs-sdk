@@ -23,8 +23,17 @@ jobs:
           release-type: node
           token: ${{ secrets.RELEASE_PAT }}
 
-  publish:
+  # Run E2E tests before publishing
+  e2e-tests:
     needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    uses: ./.github/workflows/e2e.yml
+    secrets:
+      TOKEN_SOURCE_API_KEY: ${{ secrets.TOKEN_SOURCE_API_KEY }}
+      RECAPTCHA_API_KEY: ${{ secrets.RECAPTCHA_API_KEY }}
+
+  publish:
+    needs: [release-please, e2e-tests]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:

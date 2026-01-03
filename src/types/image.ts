@@ -90,4 +90,6 @@ export type CreditStatusResult = {
   g1MembershipState: string;
   /** Whether animate feature is enabled for user's country */
   isUserAnimateCountryEnabled: boolean;
+  /** Whether GemPix2 credit feature is available */
+  isGemPix2CreditAvailable?: boolean;
 };

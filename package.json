@@ -23,7 +23,11 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "check-types": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "bun test",
+    "test:e2e": "bun test tests/e2e/",
+    "test:e2e:video": "RUN_VIDEO_TESTS=true bun test tests/e2e/",
+    "prerelease": "bun run build && bun run check-types && bun run test:e2e"
   },
   "dependencies": {},
   "devDependencies": {

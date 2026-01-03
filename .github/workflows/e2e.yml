@@ -1,0 +1,91 @@
+name: E2E Tests
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      run_video_tests:
+        description: 'Run video generation tests (uses credits)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+  # Before release
+  workflow_call:
+    inputs:
+      run_video_tests:
+        description: 'Run video generation tests'
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      TOKEN_SOURCE_API_KEY:
+        required: true
+      RECAPTCHA_API_KEY:
+        required: true
+
+jobs:
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build SDK
+        run: bun run build
+
+      - name: Fetch fresh tokens from Token Source API
+        id: tokens
+        run: |
+          RESPONSE=$(curl -s --location 'https://ts.getvrex.com/tokens' \
+            --header "X-API-Key: ${{ secrets.TOKEN_SOURCE_API_KEY }}")
+
+          # Extract first valid token
+          BEARER_TOKEN=$(echo "$RESPONSE" | jq -r '.tokens[0].token // empty')
+          SESSION_TOKEN=$(echo "$RESPONSE" | jq -r '.tokens[0].sessionToken // empty')
+          CREDITS=$(echo "$RESPONSE" | jq -r '.tokens[0].credits // 0')
+
+          if [ -z "$BEARER_TOKEN" ]; then
+            echo "❌ Failed to get bearer token from Token Source API"
+            exit 1
+          fi
+
+          echo "bearer_token=$BEARER_TOKEN" >> $GITHUB_OUTPUT
+          echo "session_token=$SESSION_TOKEN" >> $GITHUB_OUTPUT
+          echo "credits=$CREDITS" >> $GITHUB_OUTPUT
+          echo "✅ Got fresh token with $CREDITS credits"
+
+      - name: Run E2E Tests
+        run: bun run test:e2e
+        env:
+          GLABS_BEARER_TOKEN: ${{ steps.tokens.outputs.bearer_token }}
+          GLABS_SESSION_TOKEN: ${{ steps.tokens.outputs.session_token }}
+          RECAPTCHA_API_KEY: ${{ secrets.RECAPTCHA_API_KEY }}
+          RECAPTCHA_PROVIDER: regotcha
+          RUN_VIDEO_TESTS: ${{ inputs.run_video_tests || 'false' }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ All E2E tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some E2E tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Credits available: ${{ steps.tokens.outputs.credits }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Video tests: ${{ inputs.run_video_tests || 'false' }}" >> $GITHUB_STEP_SUMMARY
