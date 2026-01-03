@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/getvrex/glabs-sdk/compare/v1.3.2...v1.4.0) (2026-01-03)
+
+
+### Features
+
+* **docs:** add Fumadocs documentation site ([e2360f8](https://github.com/getvrex/glabs-sdk/commit/e2360f858d38bc311c7a0e78945c590a2fdec858))
+* **test:** add E2E test suite with CI integration ([5bc6de0](https://github.com/getvrex/glabs-sdk/commit/5bc6de0188fd35916e0c81c40ddf1d5090a077a3))
+
+
+### Bug Fixes
+
+* **docs:** improve code block with syntax highlighting and left align ([11837b1](https://github.com/getvrex/glabs-sdk/commit/11837b13c7b57451f34c0ea8fa64cad0fb4f842a))
+* **docs:** use Railway PORT env var for serve ([039f201](https://github.com/getvrex/glabs-sdk/commit/039f2015487bbe6cc9e92fe200c052dfb5164a68))
+
 ## [1.3.2](https://github.com/getvrex/glabs-sdk/compare/v1.3.1...v1.3.2) (2025-12-28)
 
 
