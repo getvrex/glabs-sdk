@@ -1,6 +1,6 @@
 import "./globals.css";
 import { RootProvider } from "fumadocs-ui/provider";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Orbitron } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -12,6 +12,12 @@ const inter = Inter({
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
+});
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  variable: "--font-orbitron",
+  weight: ["700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrains.variable}`}
+      className={`${inter.variable} ${jetbrains.variable} ${orbitron.variable}`}
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col">

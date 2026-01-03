@@ -1,0 +1,89 @@
+# GLabs SDK
+
+> TypeScript SDK for Google Labs AI media generation APIs (Imagen, Veo).
+
+## Overview
+
+GLabs SDK provides a type-safe interface for generating AI images and videos using Google Labs APIs. It supports Imagen 3 for image generation and Veo 2/3 for video generation.
+
+## Key Features
+
+- Image Generation via Imagen 3 (text-to-image, reference-based)
+- Video Generation via Veo 2/3 (text-to-video, image-to-video, extend, camera control, HD upscaling)
+- Built-in reCAPTCHA solving (Regotcha, CapSolver, YesCaptcha, Veo3Solver, Custom)
+- Account tier management (Pro, Ultra)
+- TypeScript-first with full type exports
+- Automatic retry and error handling
+
+## Installation
+
+```bash
+npm install @getvrex/glabs-sdk
+```
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_BEARER_TOKEN,
+  accountTier: 'pro',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: process.env.RECAPTCHA_API_KEY,
+  },
+});
+
+// Generate image
+const image = await client.images.generate({
+  prompt: 'A sunset over mountains',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Generate video
+const video = await client.videos.generateTextToVideo({
+  prompt: 'Cinematic drone shot of city',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+## Documentation
+
+- [Full Documentation](/llms-full.txt): Complete API reference in LLM-friendly format
+- [Getting Started](/docs/getting-started): Installation and setup guide
+- [Client Configuration](/docs/client): Client options and configuration
+- [Image Generation](/docs/image-generation): Image API reference
+- [Video Generation](/docs/video-generation): Video API reference
+- [reCAPTCHA](/docs/recaptcha): reCAPTCHA provider setup
+- [Tier Config](/docs/tier-config): Account tier utilities
+- [API Reference](/docs/api-reference): Complete API reference
+
+## API Summary
+
+### Client Methods
+
+- `client.images.generate(options)` - Generate images from text
+- `client.images.upload(options)` - Upload reference images
+- `client.images.getCreditStatus()` - Check account credits
+- `client.videos.generateTextToVideo(options)` - Text-to-video
+- `client.videos.generateImageToVideo(options)` - Image-to-video
+- `client.videos.extend(options)` - Extend video
+- `client.videos.reshoot(options)` - Camera control
+- `client.videos.upsample(options)` - HD upscaling
+- `client.videos.checkStatus(options)` - Check generation status
+- `GLabsClient.generateSessionId()` - Generate session ID
+
+### Types
+
+- `AccountTier`: 'pro' | 'ultra'
+- `AspectRatio`: '16:9' | '9:16' | '1:1'
+- `VideoMode`: 'quality' | 'fast'
+- `ImageModel`: 'nanobanana' | 'nanobananapro'
+
+## Source
+
+- Repository: https://github.com/getvrex/glabs-sdk
+- Package: @getvrex/glabs-sdk

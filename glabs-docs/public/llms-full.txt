@@ -1,0 +1,909 @@
+# GLabs SDK - Complete Documentation
+
+> TypeScript SDK for Google Labs AI media generation APIs (Imagen, Veo).
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [Client Configuration](#client-configuration)
+5. [Image Generation](#image-generation)
+6. [Video Generation](#video-generation)
+7. [reCAPTCHA Configuration](#recaptcha-configuration)
+8. [Tier Configuration](#tier-configuration)
+9. [API Reference](#api-reference)
+10. [Error Handling](#error-handling)
+
+---
+
+## Overview
+
+GLabs SDK provides a type-safe TypeScript interface for Google Labs AI APIs:
+
+- **Image Generation**: Imagen 3 models (nanobanana, nanobananapro)
+- **Video Generation**: Veo 2/3 models with multiple modes
+- **reCAPTCHA Integration**: Built-in support for multiple providers
+- **Account Tiers**: Pro and Ultra tier management
+- **Type Safety**: Full TypeScript support with exported types
+
+### Features
+
+- Text-to-image and reference-based image generation
+- Text-to-video, image-to-video generation
+- Video extension, camera control, HD upscaling
+- Automatic retry on network errors
+- Built-in reCAPTCHA solving
+
+---
+
+## Installation
+
+```bash
+# npm
+npm install @getvrex/glabs-sdk
+
+# pnpm
+pnpm add @getvrex/glabs-sdk
+
+# yarn
+yarn add @getvrex/glabs-sdk
+
+# bun
+bun add @getvrex/glabs-sdk
+```
+
+**Note:** Private package. Configure `.npmrc`:
+
+```
+@getvrex:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+---
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_BEARER_TOKEN!,
+  accountTier: 'pro',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: process.env.RECAPTCHA_API_KEY!,
+  },
+});
+
+// Generate an image
+const imageResult = await client.images.generate({
+  prompt: 'A beautiful sunset over mountains',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Generate a video
+const videoOp = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city at sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// Check video status
+const status = await client.videos.checkStatus({
+  operationName: videoOp.operationName,
+});
+```
+
+---
+
+## Client Configuration
+
+### Constructor Options
+
+```typescript
+interface GLabsClientConfig {
+  bearerToken: string;           // Required: Auth token
+  accountTier?: 'pro' | 'ultra'; // Default: 'pro'
+  projectId?: string;            // Can be provided per-request
+  recaptcha?: RecaptchaConfig;   // Required for generation
+  logger?: GLabsLogger;          // Default: console
+  timeout?: number;              // Default: 120000 (2 min)
+  maxRetries?: number;           // Default: 2
+  retryDelay?: number;           // Default: 1500 (1.5s)
+}
+```
+
+### Account Tiers
+
+| Feature | Pro | Ultra |
+|---------|-----|-------|
+| Video Modes | quality, fast | quality, fast |
+| Default Video Mode | fast | quality |
+| HD Upscaling | Yes | Yes |
+| Max Images/Batch | 4 | 4 |
+
+### Example Configuration
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  accountTier: 'ultra',
+  projectId: 'my-project',
+  timeout: 180000,
+  maxRetries: 3,
+  retryDelay: 2000,
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'api-key',
+  },
+});
+```
+
+### Custom Logger
+
+```typescript
+interface GLabsLogger {
+  log: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+}
+```
+
+### Session ID Generation
+
+```typescript
+const sessionId = GLabsClient.generateSessionId();
+// Returns UUID: '550e8400-e29b-41d4-a716-446655440000'
+```
+
+---
+
+## Image Generation
+
+### Upload Image
+
+Upload an image for use as reference:
+
+```typescript
+const result = await client.images.upload({
+  imageBase64: 'base64-encoded-image',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9', // Optional
+});
+
+// Returns:
+// result.mediaId - Use as reference
+// result.width, result.height
+```
+
+### Generate Images
+
+```typescript
+const result = await client.images.generate({
+  prompt: 'A majestic mountain landscape',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  count: 4,              // 1-4 images
+  model: 'nanobanana',   // or 'nanobananapro'
+});
+
+for (const image of result.images) {
+  console.log(image.encodedImage); // Base64 data
+  console.log(image.mediaId);      // For video generation
+}
+```
+
+### Generate Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `prompt` | `string` | Yes | Image description |
+| `sessionId` | `string` | Yes | Session identifier |
+| `aspectRatio` | `'16:9' \| '9:16' \| '1:1'` | Yes | Image ratio |
+| `projectId` | `string` | No | Project ID |
+| `references` | `ImageReference[]` | No | Reference images |
+| `seed` | `number` | No | Random seed |
+| `count` | `number` | No | Images to generate (1-4) |
+| `model` | `'nanobanana' \| 'nanobananapro'` | No | Model |
+| `prompts` | `string[]` | No | Different prompt per image |
+
+### Using Reference Images
+
+```typescript
+const ref = await client.images.upload({
+  imageBase64: styleImage,
+  sessionId: GLabsClient.generateSessionId(),
+});
+
+const result = await client.images.generate({
+  prompt: 'Similar landscape in winter',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  references: [{ mediaId: ref.mediaId }],
+});
+```
+
+### Check Credits
+
+```typescript
+const credits = await client.images.getCreditStatus();
+console.log(credits.credits);
+```
+
+### Image Models
+
+| Model | Description |
+|-------|-------------|
+| `nanobanana` | Standard Imagen (GEM_PIX) |
+| `nanobananapro` | Enhanced Imagen (GEM_PIX_2) |
+
+---
+
+## Video Generation
+
+### Video Generation Types
+
+| Method | Description |
+|--------|-------------|
+| `generateTextToVideo` | Text prompt to video |
+| `generateImageToVideo` | Image to video (first frame) |
+| `extend` | Extend existing video |
+| `reshoot` | Camera control |
+| `upsample` | HD upscaling (1080p) |
+| `generateReferenceImagesVideo` | Multi-reference video |
+
+### Text to Video
+
+```typescript
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'Cinematic drone shot of city at golden hour',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  videoMode: 'quality', // or 'fast'
+});
+
+console.log(operation.operationName); // For status polling
+console.log(operation.sceneId);
+```
+
+### Image to Video
+
+```typescript
+const imageResult = await client.images.upload({
+  imageBase64: myImage,
+  sessionId: GLabsClient.generateSessionId(),
+});
+
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'The scene comes to life',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  startMediaId: imageResult.mediaId!,
+  endMediaId: endImage.mediaId, // Optional: for first-last mode
+});
+```
+
+### Extend Video
+
+```typescript
+const operation = await client.videos.extend({
+  mediaId: existingVideo.mediaGenerationId!,
+  prompt: 'Camera continues forward',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  startFrameIndex: 168,
+  endFrameIndex: 191,
+});
+```
+
+### Camera Control (Reshoot)
+
+```typescript
+const operation = await client.videos.reshoot({
+  mediaId: video.mediaGenerationId!,
+  reshootMotionType: 'RESHOOT_MOTION_TYPE_FORWARD',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Available Motion Types:**
+
+Camera Control:
+- `RESHOOT_MOTION_TYPE_UP`
+- `RESHOOT_MOTION_TYPE_DOWN`
+- `RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT`
+- `RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT`
+- `RESHOOT_MOTION_TYPE_FORWARD`
+- `RESHOOT_MOTION_TYPE_BACKWARD`
+- `RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT`
+- `RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE`
+
+Stationary Camera:
+- `RESHOOT_MOTION_TYPE_STATIONARY_UP`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOWN`
+- `RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT`
+- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
+
+### HD Upscaling
+
+```typescript
+const operation = await client.videos.upsample({
+  originalMediaId: video.mediaGenerationId!,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9', // Only 16:9 supported
+});
+```
+
+### Reference Images Video
+
+```typescript
+const operation = await client.videos.generateReferenceImagesVideo({
+  prompt: 'Animated scene combining these styles',
+  referenceMediaIds: [img1.mediaId!, img2.mediaId!, img3.mediaId!],
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+### Check Video Status
+
+```typescript
+const status = await client.videos.checkStatus({
+  operationName: operation.operationName,
+});
+
+console.log(status.status);
+console.log(status.videoUrl);
+console.log(status.thumbnailUrl);
+console.log(status.duration);
+console.log(status.mediaGenerationId);
+```
+
+**Status Values:**
+
+| Status | Description |
+|--------|-------------|
+| `MEDIA_GENERATION_STATUS_PENDING` | Queued |
+| `MEDIA_GENERATION_STATUS_ACTIVE` | Started |
+| `MEDIA_GENERATION_STATUS_PROCESSING` | In progress |
+| `MEDIA_GENERATION_STATUS_SUCCESSFUL` | Complete |
+| `MEDIA_GENERATION_STATUS_COMPLETED` | Complete (alt) |
+| `MEDIA_GENERATION_STATUS_FAILED` | Failed |
+
+### Polling Example
+
+```typescript
+async function waitForVideo(operationName: string): Promise<VideoStatusResult> {
+  const maxAttempts = 60;
+  const pollInterval = 5000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const status = await client.videos.checkStatus({ operationName });
+
+    if (
+      status.status === 'MEDIA_GENERATION_STATUS_SUCCESSFUL' ||
+      status.status === 'MEDIA_GENERATION_STATUS_COMPLETED'
+    ) {
+      return status;
+    }
+
+    if (status.status === 'MEDIA_GENERATION_STATUS_FAILED') {
+      throw new Error(status.error ?? 'Video generation failed');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error('Video generation timed out');
+}
+
+const result = await waitForVideo(operation.operationName);
+console.log('Video URL:', result.videoUrl);
+```
+
+### Video Modes
+
+| Mode | Description |
+|------|-------------|
+| `quality` | Higher quality, slower |
+| `fast` | Lower quality, faster |
+
+Pro defaults to `fast`, Ultra defaults to `quality`.
+
+---
+
+## reCAPTCHA Configuration
+
+Both image and video generation require reCAPTCHA. The SDK supports multiple providers.
+
+### Regotcha (Recommended)
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'your-regotcha-api-key',
+    maxRetries: 30,
+  },
+});
+```
+
+### CapSolver (Recommended)
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'capsolver',
+    apiKey: 'your-capsolver-api-key',
+    proxy: 'http://user:pass@ip:port', // Optional
+    maxRetries: 30,
+  },
+});
+```
+
+### YesCaptcha
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'yescaptcha',
+    apiKey: 'your-yescaptcha-key',
+    maxRetries: 20,
+  },
+});
+```
+
+### Veo3Solver
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'veo3solver',
+    jwtToken: 'your-jwt-token',
+  },
+});
+```
+
+### Custom Solver
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'custom',
+    customEndpoint: 'http://localhost:8000/solve',
+    proxy: 'http://user:pass@host:port',
+  },
+});
+```
+
+Custom solver API must accept POST with:
+
+```json
+{
+  "websiteURL": "https://labs.google",
+  "websiteKey": "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
+  "pageAction": "FLOW_GENERATION"
+}
+```
+
+And return:
+
+```json
+{ "success": true, "token": "03AFcWeA..." }
+```
+
+### Static Token (Testing)
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'regotcha',
+    staticToken: 'pre-obtained-token', // Bypasses provider
+  },
+});
+```
+
+### Configuration Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `provider` | `string` | Yes | Provider name |
+| `apiKey` | `string` | Yes* | API key |
+| `jwtToken` | `string` | No** | JWT for veo3solver |
+| `customEndpoint` | `string` | No*** | Custom solver URL |
+| `staticToken` | `string` | No | Static token (testing) |
+| `proxy` | `string` | No | Proxy URL |
+| `maxRetries` | `number` | No | Max polling attempts |
+
+---
+
+## Tier Configuration
+
+### Utility Functions
+
+```typescript
+import {
+  getTierCapabilities,
+  getEffectiveVideoMode,
+  getVideoApiConfig,
+  getImageApiConfig,
+  isFeatureSupported,
+} from '@getvrex/glabs-sdk';
+```
+
+### Get Tier Capabilities
+
+```typescript
+const capabilities = getTierCapabilities('pro');
+console.log(capabilities.supportedVideoModes);  // ['quality', 'fast']
+console.log(capabilities.defaultVideoMode);     // 'fast'
+console.log(capabilities.supportsUpsample);     // true
+```
+
+### Get Effective Video Mode
+
+```typescript
+const mode = getEffectiveVideoMode('pro', 'quality'); // 'quality'
+const defaultMode = getEffectiveVideoMode('pro');     // 'fast'
+```
+
+### Get Video API Config
+
+```typescript
+const config = getVideoApiConfig('text-to-video', 'pro', '16:9', 'fast');
+console.log(config.videoModelKey);      // 'veo_3_1_t2v_fast_ultra'
+console.log(config.effectiveVideoMode); // 'fast'
+```
+
+### Check Feature Support
+
+```typescript
+const support = isFeatureSupported('upsample', 'pro', '16:9');
+console.log(support.supported); // true
+
+const portrait = isFeatureSupported('upsample', 'pro', '9:16');
+console.log(portrait.supported); // false
+console.log(portrait.reason);    // 'HD upscaling only supports 16:9'
+```
+
+### Video Model Keys
+
+Text-to-Video:
+| Mode | Model Key |
+|------|-----------|
+| fast | `veo_3_1_t2v_fast_ultra` |
+| quality | `veo_3_1_t2v` |
+
+Image-to-Video:
+| Mode | Aspect | Model Key |
+|------|--------|-----------|
+| fast | 16:9 | `veo_3_1_i2v_s_fast_ultra` |
+| fast | 9:16 | `veo_3_1_i2v_s_fast_portrait_ultra` |
+| quality | 16:9 | `veo_3_1_i2v_s` |
+| quality | 9:16 | `veo_3_1_i2v_s_portrait` |
+
+Camera Control:
+| Aspect | Model Key |
+|--------|-----------|
+| 16:9 | `veo_3_0_reshoot_landscape` |
+| 9:16 | `veo_3_0_reshoot_portrait` |
+| 1:1 | `veo_3_0_reshoot_square` |
+
+---
+
+## API Reference
+
+### GLabsClient
+
+```typescript
+class GLabsClient {
+  constructor(config: GLabsClientConfig);
+
+  readonly accountTier: AccountTier;
+  readonly projectId: string | undefined;
+
+  static generateSessionId(): string;
+
+  images: {
+    getCreditStatus(): Promise<CreditStatusResult>;
+    upload(options: UploadImageOptions): Promise<UploadImageResult>;
+    generate(options: GenerateImageOptions): Promise<GenerateImageResult>;
+  };
+
+  videos: {
+    generateTextToVideo(options: GenerateTextToVideoOptions): Promise<VideoOperationResult>;
+    generateImageToVideo(options: GenerateImageToVideoOptions): Promise<VideoOperationResult>;
+    extend(options: ExtendVideoOptions): Promise<VideoOperationResult>;
+    reshoot(options: ReshootVideoOptions): Promise<VideoOperationResult>;
+    upsample(options: UpsampleVideoOptions): Promise<VideoOperationResult>;
+    generateReferenceImagesVideo(options: GenerateReferenceImagesVideoOptions): Promise<VideoOperationResult>;
+    checkStatus(options: CheckVideoStatusOptions): Promise<VideoStatusResult>;
+  };
+}
+```
+
+### Types
+
+```typescript
+interface GLabsClientConfig {
+  bearerToken: string;
+  accountTier?: AccountTier;
+  projectId?: string;
+  recaptcha?: RecaptchaConfig;
+  logger?: GLabsLogger;
+  timeout?: number;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
+interface RecaptchaConfig {
+  provider: 'yescaptcha' | 'capsolver' | 'regotcha' | 'veo3solver' | 'custom';
+  apiKey?: string;
+  jwtToken?: string;
+  customEndpoint?: string;
+  staticToken?: string;
+  proxy?: string;
+  maxRetries?: number;
+}
+
+interface UploadImageOptions {
+  imageBase64: string;
+  sessionId: string;
+  aspectRatio?: AspectRatio;
+}
+
+interface UploadImageResult {
+  mediaGenerationId?: string;
+  mediaId?: string;
+  width?: number;
+  height?: number;
+  workflowId?: string;
+  sessionId: string;
+}
+
+interface GenerateImageOptions {
+  prompt: string;
+  projectId?: string;
+  sessionId: string;
+  aspectRatio: AspectRatio;
+  references?: ImageReference[];
+  seed?: number;
+  count?: number;
+  model?: ImageModel;
+  prompts?: string[];
+}
+
+interface GenerateImageResult {
+  images: GeneratedImage[];
+  sessionId: string;
+}
+
+interface GeneratedImage {
+  encodedImage?: string;
+  mediaId?: string;
+  mediaGenerationId?: string;
+  workflowId?: string;
+  prompt?: string;
+  seed?: number;
+  mimeType?: string;
+  fifeUrl?: string;
+}
+
+interface VideoOperationResult {
+  operationName: string;
+  sceneId: string;
+  status: string;
+  remainingCredits?: number;
+}
+
+interface VideoStatusResult {
+  status: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  mediaGenerationId?: string;
+  error?: string;
+  remainingCredits?: number;
+}
+
+interface GenerateTextToVideoOptions {
+  prompt: string;
+  sessionId: string;
+  projectId?: string;
+  aspectRatio: AspectRatio;
+  accountTier?: AccountTier;
+  videoMode?: VideoMode;
+  seed?: number;
+  sceneId?: string;
+}
+
+interface GenerateImageToVideoOptions {
+  prompt: string;
+  sessionId: string;
+  projectId?: string;
+  aspectRatio: AspectRatio;
+  accountTier?: AccountTier;
+  videoMode?: VideoMode;
+  startMediaId: string;
+  endMediaId?: string;
+  seed?: number;
+  sceneId?: string;
+}
+
+interface ExtendVideoOptions {
+  mediaId: string;
+  prompt: string;
+  sessionId: string;
+  projectId?: string;
+  aspectRatio: AspectRatio;
+  accountTier?: AccountTier;
+  videoMode?: VideoMode;
+  startFrameIndex?: number;
+  endFrameIndex?: number;
+  seed?: number;
+  sceneId?: string;
+}
+
+interface ReshootVideoOptions {
+  mediaId: string;
+  reshootMotionType: ReshootMotionType;
+  sessionId: string;
+  projectId?: string;
+  aspectRatio: AspectRatio;
+  accountTier?: AccountTier;
+  seed?: number;
+  sceneId?: string;
+}
+
+interface UpsampleVideoOptions {
+  originalMediaId: string;
+  sessionId: string;
+  aspectRatio: AspectRatio;
+  seed?: number;
+  sceneId?: string;
+}
+
+type AccountTier = 'pro' | 'ultra';
+type VideoMode = 'quality' | 'fast';
+type AspectRatio = '16:9' | '9:16' | '1:1';
+type ImageModel = 'nanobanana' | 'nanobananapro';
+
+type ReshootMotionType =
+  | 'RESHOOT_MOTION_TYPE_UP'
+  | 'RESHOOT_MOTION_TYPE_DOWN'
+  | 'RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT'
+  | 'RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT'
+  | 'RESHOOT_MOTION_TYPE_FORWARD'
+  | 'RESHOOT_MOTION_TYPE_BACKWARD'
+  | 'RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT'
+  | 'RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_UP'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOWN'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE';
+```
+
+---
+
+## Error Handling
+
+### GLabsError Class
+
+```typescript
+class GLabsError extends Error {
+  readonly code: string;
+  readonly statusCode?: number;
+  readonly cause?: unknown;
+
+  toJSON(): object;
+}
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| `NETWORK_ERROR` | Network request failed |
+| `HIGH_TRAFFIC` | Service busy |
+| `INTERNAL_ERROR` | Server error |
+| `INVALID_ARGUMENT` | Content violates policy |
+| `PERMISSION_DENIED` | Auth failed |
+| `RECAPTCHA_REQUIRED` | reCAPTCHA not configured |
+| `RECAPTCHA_TIMEOUT` | Token timeout |
+| `RECAPTCHA_FAILED` | Token request failed |
+| `RECAPTCHA_EVAL_FAILED` | Evaluation failed |
+| `RECAPTCHA_API_ERROR` | Provider API error |
+| `PARSE_ERROR` | Response parsing failed |
+| `UNKNOWN` | Unknown error |
+
+### Error Handling Example
+
+```typescript
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
+
+try {
+  const result = await client.images.generate({...});
+} catch (error) {
+  if (error instanceof GLabsError) {
+    switch (error.code) {
+      case 'INVALID_ARGUMENT':
+        console.error('Content violates policy');
+        break;
+      case 'HIGH_TRAFFIC':
+        console.error('Service busy, try later');
+        break;
+      case 'RECAPTCHA_REQUIRED':
+        console.error('Configure reCAPTCHA');
+        break;
+      case 'RECAPTCHA_EVAL_FAILED':
+        console.error('reCAPTCHA failed after retries');
+        break;
+      default:
+        console.error('Error:', error.message);
+    }
+  }
+}
+```
+
+---
+
+## Imports
+
+```typescript
+// Main client
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
+
+// Types
+import type {
+  AccountTier,
+  AspectRatio,
+  VideoMode,
+  ImageModel,
+  ReshootMotionType,
+  GenerateImageOptions,
+  GenerateTextToVideoOptions,
+  VideoStatusResult,
+} from '@getvrex/glabs-sdk/types';
+
+// Utilities
+import {
+  getTierCapabilities,
+  getEffectiveVideoMode,
+  getVideoApiConfig,
+  getImageApiConfig,
+  isFeatureSupported,
+  getVideoAspectRatioEnum,
+  getImageAspectRatioEnum,
+  getVideoModelKey,
+} from '@getvrex/glabs-sdk';
+
+// Services (advanced)
+import {
+  ImageService,
+  VideoService,
+  RecaptchaService,
+} from '@getvrex/glabs-sdk';
+```
+
+---
+
+## Source
+
+- Repository: https://github.com/getvrex/glabs-sdk
+- Package: @getvrex/glabs-sdk
+- License: MIT

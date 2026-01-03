@@ -23,6 +23,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)"],
         mono: ["var(--font-jetbrains)"],
+        logo: ["var(--font-orbitron)"],
       },
     },
   },

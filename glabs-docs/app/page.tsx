@@ -9,10 +9,10 @@ export default function HomePage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-purple-500/10 via-transparent to-blue-500/10" />
 
         <div className="max-w-3xl">
-          <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-6xl">
-            <span className="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
-              GLabs SDK
-            </span>
+          <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-6xl font-logo tracking-wider">
+            <span className="text-primary">G</span>
+            <span className="text-foreground">Labs</span>
+            <span className="ml-2 text-2xl md:text-3xl font-mono text-muted-foreground align-middle">SDK</span>
           </h1>
 
           <p className="mb-8 text-xl text-muted-foreground">
@@ -173,6 +173,9 @@ export default function HomePage() {
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">
               Docs
+            </Link>
+            <Link href="/llms.txt" className="hover:text-foreground">
+              llms.txt
             </Link>
             <Link
               href="https://github.com/getvrex/glabs-sdk"
