@@ -41,7 +41,7 @@ export const RECAPTCHA_CONFIG = {
   REGOTCHA_API_BASE: "https://api.regotcha.com",
   VEO3SOLVER_API_URL: "https://new-rest.onewise.app/api/fix/get-token",
   WEBSITE_KEY: "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
-  WEBSITE_URL: "https://labs.google/",
+  WEBSITE_URL: "https://labs.google/fx/tools/flow",
   PAGE_ACTION: "IMAGE_GENERATION",
   PAGE_ACTION_VIDEO: "VIDEO_GENERATION",
 } as const;

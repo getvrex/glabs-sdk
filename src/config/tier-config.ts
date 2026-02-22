@@ -34,12 +34,22 @@ import type {
 // ============================================================================
 // Tier Capability Configuration (Single Source of Truth)
 // ============================================================================
+//
+// Tier-model relationship:
+// - Pro  (PAYGATE_TIER_ONE): Uses standard models (no _ultra suffix).
+//   Quality mode uses base models (e.g. veo_3_1_t2v, veo_3_1_i2v_s).
+//   Fast mode uses _fast variants (e.g. veo_3_1_t2v_fast, veo_3_1_i2v_s_fast).
+// - Ultra (PAYGATE_TIER_TWO): Uses _ultra models for fast mode
+//   (e.g. veo_3_1_t2v_fast_ultra, veo_3_1_i2v_s_fast_ultra).
+//   Quality mode shares the same base models as Pro.
+//
+// Using _ultra models with a Pro tier account returns 400 INVALID_ARGUMENT.
 
 const TIER_CAPABILITIES: TierCapabilitiesRecord = {
   pro: {
     supportedVideoModes: ["quality", "fast"],
     defaultVideoMode: "fast",
-    paygateTier: "PAYGATE_TIER_TWO",
+    paygateTier: "PAYGATE_TIER_ONE",
     supportsUpsample: true,
     supportsQualityMode: true,
     maxImageGenerationCount: 4,
@@ -61,9 +71,9 @@ const TIER_CAPABILITIES: TierCapabilitiesRecord = {
 const TEXT_TO_VIDEO_MODELS: VideoModelMapping = {
   pro: {
     fast: {
-      "16:9": "veo_3_1_t2v_fast_ultra",
-      "9:16": "veo_3_1_t2v_fast_ultra",
-      "1:1": "veo_3_1_t2v_fast_ultra",
+      "16:9": "veo_3_1_t2v_fast",
+      "9:16": "veo_3_1_t2v_fast",
+      "1:1": "veo_3_1_t2v_fast",
     },
     quality: {
       "16:9": "veo_3_1_t2v",
@@ -88,9 +98,9 @@ const TEXT_TO_VIDEO_MODELS: VideoModelMapping = {
 const IMAGE_TO_VIDEO_MODELS: VideoModelMapping = {
   pro: {
     fast: {
-      "16:9": "veo_3_1_i2v_s_fast_ultra",
-      "9:16": "veo_3_1_i2v_s_fast_portrait_ultra",
-      "1:1": "veo_3_1_i2v_s_fast_ultra",
+      "16:9": "veo_3_1_i2v_s_fast",
+      "9:16": "veo_3_1_i2v_s_fast_portrait",
+      "1:1": "veo_3_1_i2v_s_fast",
     },
     quality: {
       "16:9": "veo_3_1_i2v_s",
@@ -115,9 +125,9 @@ const IMAGE_TO_VIDEO_MODELS: VideoModelMapping = {
 const IMAGE_TO_VIDEO_FL_MODELS: VideoModelMapping = {
   pro: {
     fast: {
-      "16:9": "veo_3_1_i2v_s_fast_ultra_fl",
-      "9:16": "veo_3_1_i2v_s_fast_portrait_ultra_fl",
-      "1:1": "veo_3_1_i2v_s_fast_ultra_fl",
+      "16:9": "veo_3_1_i2v_s_fast_fl",
+      "9:16": "veo_3_1_i2v_s_fast_portrait_fl",
+      "1:1": "veo_3_1_i2v_s_fast_fl",
     },
     quality: {
       "16:9": "veo_3_1_i2v_s_fl",
@@ -142,14 +152,14 @@ const IMAGE_TO_VIDEO_FL_MODELS: VideoModelMapping = {
 const EXTEND_VIDEO_MODELS: VideoModelMapping = {
   pro: {
     fast: {
-      "16:9": "veo_3_1_extend_fast_landscape_ultra",
-      "9:16": "veo_3_1_extend_fast_portrait_ultra",
-      "1:1": "veo_3_1_extend_fast_square_ultra",
+      "16:9": "veo_3_1_extend_fast_landscape",
+      "9:16": "veo_3_1_extend_fast_portrait",
+      "1:1": "veo_3_1_extend_fast_square",
     },
     quality: {
-      "16:9": "veo_3_1_extend_landscape_ultra",
-      "9:16": "veo_3_1_extend_portrait_ultra",
-      "1:1": "veo_3_1_extend_square_ultra",
+      "16:9": "veo_3_1_extend_landscape",
+      "9:16": "veo_3_1_extend_portrait",
+      "1:1": "veo_3_1_extend_square",
     },
   },
   ultra: {
@@ -176,6 +186,7 @@ const REFERENCE_IMAGES_VIDEO_MODELS: Record<AccountTier, string> = {
   pro: "veo_3_0_r2v_fast",
   ultra: "veo_3_0_r2v_fast_ultra",
 };
+// Note: pro reference-images model has no _ultra suffix — already correct.
 
 const UPSAMPLE_VIDEO_MODEL = "veo_2_1080p_upsampler_8s";
 

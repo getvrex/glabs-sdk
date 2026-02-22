@@ -77,7 +77,6 @@ import type {
   VideoOperationResult,
   VideoStatusResult,
 } from "./types/video";
-import { generateId } from "./utils";
 
 /** Default logger using console */
 const defaultLogger: GLabsLogger = {
@@ -137,10 +136,10 @@ export class GLabsClient {
   }
 
   /**
-   * Generate a unique session ID
+   * Generate a session ID in the format expected by Google's API: ";TIMESTAMP_MS"
    */
   static generateSessionId(): string {
-    return generateId();
+    return `";${Date.now()}"`;
   }
 
   /**
