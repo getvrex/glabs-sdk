@@ -72,24 +72,24 @@ const TEXT_TO_VIDEO_MODELS: VideoModelMapping = {
   pro: {
     fast: {
       "16:9": "veo_3_1_t2v_fast",
-      "9:16": "veo_3_1_t2v_fast",
+      "9:16": "veo_3_1_t2v_fast_portrait",
       "1:1": "veo_3_1_t2v_fast",
     },
     quality: {
       "16:9": "veo_3_1_t2v",
-      "9:16": "veo_3_1_t2v",
+      "9:16": "veo_3_1_t2v_portrait",
       "1:1": "veo_3_1_t2v",
     },
   },
   ultra: {
     fast: {
       "16:9": "veo_3_1_t2v_fast_ultra",
-      "9:16": "veo_3_1_t2v_fast_ultra",
+      "9:16": "veo_3_1_t2v_fast_portrait_ultra",
       "1:1": "veo_3_1_t2v_fast_ultra",
     },
     quality: {
       "16:9": "veo_3_1_t2v",
-      "9:16": "veo_3_1_t2v",
+      "9:16": "veo_3_1_t2v_portrait",
       "1:1": "veo_3_1_t2v",
     },
   },

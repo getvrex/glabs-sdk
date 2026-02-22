@@ -29,7 +29,9 @@
     "test:e2e:video": "RUN_VIDEO_TESTS=true bun test tests/e2e/",
     "prerelease": "bun run build && bun run check-types && bun run test:e2e"
   },
-  "dependencies": {},
+  "dependencies": {
+    "chrome-remote-interface": "^0.34.0"
+  },
   "devDependencies": {
     "tsup": "^8.5.0",
     "typescript": "^5"
