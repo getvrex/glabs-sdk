@@ -70,6 +70,7 @@ export type {
 // Video types
 export type {
   CheckVideoStatusOptions,
+PollOperationOptions,
   ExtendVideoOptions,
   GenerateImageToVideoOptions,
   GenerateReferenceImagesVideoOptions,

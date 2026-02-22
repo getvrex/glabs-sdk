@@ -10,6 +10,7 @@ import type { GLabsLogger, ResolvedConfig } from "../types/client";
 import type { RecaptchaTokenResult } from "../types/recaptcha";
 import type {
   CheckVideoStatusOptions,
+  PollOperationOptions,
   ExtendVideoOptions,
   GenerateImageToVideoOptions,
   GenerateReferenceImagesVideoOptions,
@@ -612,6 +613,59 @@ export class VideoService {
       error: errorMessage,
       remainingCredits: data.remainingCredits as number | undefined,
     };
+  }
+
+  /**
+   * Poll a video operation until completion, failure, or timeout.
+   * Returns the final VideoStatusResult with videoUrl when ready.
+   */
+  async pollOperation(
+    options: PollOperationOptions
+  ): Promise<VideoStatusResult> {
+    const {
+      operationName,
+      sceneId,
+      maxAttempts = 60,
+      intervalMs = 10000,
+      onProgress,
+    } = options;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const result = await this.checkStatus({ operationName, sceneId });
+
+      if (onProgress) {
+        onProgress(result, attempt);
+      }
+
+      // Completed successfully
+      if (
+        result.status === "MEDIA_GENERATION_STATUS_COMPLETED" ||
+        (result.videoUrl && result.videoUrl.length > 0)
+      ) {
+        return result;
+      }
+
+      // Failed
+      if (
+        result.status === "MEDIA_GENERATION_STATUS_FAILED" ||
+        result.error
+      ) {
+        throw new GLabsError(
+          result.error ?? `Video generation failed with status: ${result.status}`,
+          "VIDEO_GENERATION_FAILED"
+        );
+      }
+
+      // Still pending/active — wait and retry
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+    }
+
+    throw new GLabsError(
+      `Video generation timed out after ${maxAttempts} attempts (${(maxAttempts * intervalMs) / 1000}s)`,
+      "VIDEO_POLL_TIMEOUT"
+    );
   }
 
   /**

@@ -56,6 +56,7 @@ export type {
   AspectRatio,
   // Video types
   CheckVideoStatusOptions,
+PollOperationOptions,
   ClientContext,
   // Image types
   CreditStatusResult,

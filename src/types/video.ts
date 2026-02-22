@@ -117,6 +117,20 @@ export type CheckVideoStatusOptions = {
   sceneId?: string;
 };
 
+/** Options for polling a video operation until completion */
+export type PollOperationOptions = {
+  /** Operation name from the generation request */
+  operationName: string;
+  /** Scene ID (optional) */
+  sceneId?: string;
+  /** Maximum number of poll attempts (default: 60) */
+  maxAttempts?: number;
+  /** Interval between polls in ms (default: 10000) */
+  intervalMs?: number;
+  /** Callback on each poll with current status */
+  onProgress?: (status: VideoStatusResult, attempt: number) => void;
+};
+
 /** Result from checking video status */
 export type VideoStatusResult = {
   /** Current status */
