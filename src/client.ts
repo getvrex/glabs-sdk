@@ -68,6 +68,7 @@ import type {
 } from "./types/project";
 import type {
   CheckVideoStatusOptions,
+PollOperationOptions,
   ExtendVideoOptions,
   GenerateImageToVideoOptions,
   GenerateReferenceImagesVideoOptions,
@@ -359,5 +360,12 @@ export class GLabsClient {
     checkStatus: (
       options: CheckVideoStatusOptions
     ): Promise<VideoStatusResult> => this.videoService.checkStatus(options),
+
+    /**
+     * Poll a video operation until completion, failure, or timeout
+     */
+    pollOperation: (
+      options: PollOperationOptions
+    ): Promise<VideoStatusResult> => this.videoService.pollOperation(options),
   };
 }
