@@ -33,6 +33,7 @@ if (await envFile.exists()) {
 }
 
 const bearerToken = process.env.GLABS_BEARER_TOKEN;
+const sessionToken = process.env.GLABS_SESSION_TOKEN;
 const projectId = process.env.GLABS_PROJECT_ID;
 const recaptchaApiKey = process.env.RECAPTCHA_API_KEY;
 const regotchaApiKey = process.env.REGOTCHA_API_KEY;
@@ -77,6 +78,7 @@ const getRecaptchaConfig = () => {
 
 const client = new GLabsClient({
   bearerToken,
+  sessionToken,
   projectId,
   recaptcha: getRecaptchaConfig(),
 });

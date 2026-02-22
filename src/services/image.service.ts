@@ -219,10 +219,13 @@ export class ImageService {
 
         return {
           clientContext: {
+            recaptchaContext: {
+              token: recaptchaToken,
+              applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB",
+            },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
-            recaptchaToken,
           },
           seed: requestSeed,
           imageModelName,
@@ -234,8 +237,13 @@ export class ImageService {
 
     const buildPayload = (recaptchaToken: string) => ({
       clientContext: {
+        recaptchaContext: {
+          token: recaptchaToken,
+          applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB",
+        },
         sessionId: sessionId.trim(),
-        recaptchaToken,
+        projectId: projectId.trim(),
+        tool: "PINHOLE",
       },
       requests: buildRequests(recaptchaToken),
     });

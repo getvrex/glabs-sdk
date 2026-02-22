@@ -42,7 +42,7 @@ export const RECAPTCHA_CONFIG = {
   VEO3SOLVER_API_URL: "https://new-rest.onewise.app/api/fix/get-token",
   WEBSITE_KEY: "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
   WEBSITE_URL: "https://labs.google/",
-  PAGE_ACTION: "FLOW_GENERATION",
+  PAGE_ACTION: "IMAGE_GENERATION",
 } as const;
 
 /** Default request headers */
