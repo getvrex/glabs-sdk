@@ -43,6 +43,7 @@ export const RECAPTCHA_CONFIG = {
   WEBSITE_KEY: "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
   WEBSITE_URL: "https://labs.google/",
   PAGE_ACTION: "IMAGE_GENERATION",
+  PAGE_ACTION_VIDEO: "VIDEO_GENERATION",
 } as const;
 
 /** Default request headers */

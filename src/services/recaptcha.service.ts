@@ -40,7 +40,8 @@ export class RecaptchaService {
    * Get a reCAPTCHA token using the configured provider
    */
   async getToken(config: RecaptchaConfig): Promise<RecaptchaTokenResult> {
-    const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken, staticToken } = config;
+    const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken, staticToken, pageAction } = config;
+    const effectivePageAction = pageAction ?? RECAPTCHA_CONFIG.PAGE_ACTION;
 
     // If staticToken provided, return it directly (useful for testing)
     if (staticToken) {
@@ -55,7 +56,7 @@ export class RecaptchaService {
           "RECAPTCHA_CONFIG_ERROR"
         );
       }
-      return await this.getTokenFromCustomSolver(customEndpoint, { proxy, anchor, reload });
+      return await this.getTokenFromCustomSolver(customEndpoint, { proxy, anchor, reload, pageAction: effectivePageAction });
     }
 
     if (provider === "veo3solver") {
@@ -76,14 +77,14 @@ export class RecaptchaService {
     }
 
     if (provider === "capsolver") {
-      return await this.getTokenFromCapSolver(apiKey, maxRetries, proxy);
+      return await this.getTokenFromCapSolver(apiKey, maxRetries, proxy, effectivePageAction);
     }
 
     if (provider === "regotcha") {
-      return await this.getTokenFromRegotcha(apiKey, maxRetries);
+      return await this.getTokenFromRegotcha(apiKey, maxRetries, effectivePageAction);
     }
 
-    return await this.getTokenFromYesCaptcha(apiKey, maxRetries);
+    return await this.getTokenFromYesCaptcha(apiKey, maxRetries, effectivePageAction);
   }
 
   /**
@@ -91,13 +92,14 @@ export class RecaptchaService {
    */
   private async getTokenFromYesCaptcha(
     clientKey: string,
-    maxRetries: number = DEFAULTS.RECAPTCHA_MAX_RETRIES
+    maxRetries: number = DEFAULTS.RECAPTCHA_MAX_RETRIES,
+    pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION
   ): Promise<RecaptchaTokenResult> {
     this.logger.log(
-      `[reCAPTCHA] Requesting token from YesCaptcha (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+      `[reCAPTCHA] Requesting token from YesCaptcha (Action: ${pageAction})`
     );
 
-    const taskId = await this.createYesCaptchaTask(clientKey);
+    const taskId = await this.createYesCaptchaTask(clientKey, pageAction);
     this.logger.log(`[reCAPTCHA] Task created (ID: ${taskId}), polling...`);
 
     for (let i = 0; i < maxRetries; i++) {
@@ -136,13 +138,14 @@ export class RecaptchaService {
   private async getTokenFromCapSolver(
     apiKey: string,
     maxRetries = 30,
-    proxy?: string
+    proxy?: string,
+    pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION
   ): Promise<RecaptchaTokenResult> {
     this.logger.log(
-      `[reCAPTCHA] Requesting token from CapSolver (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+      `[reCAPTCHA] Requesting token from CapSolver (Action: ${pageAction})`
     );
 
-    const taskId = await this.createCapSolverTask(apiKey, proxy);
+    const taskId = await this.createCapSolverTask(apiKey, proxy, pageAction);
     this.logger.log(`[reCAPTCHA] Task created (ID: ${taskId}), polling...`);
 
     const startTime = Date.now();
@@ -190,7 +193,7 @@ export class RecaptchaService {
   /**
    * Create a YesCaptcha task
    */
-  private async createYesCaptchaTask(clientKey: string): Promise<string> {
+  private async createYesCaptchaTask(clientKey: string, pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION): Promise<string> {
     const response = await fetch(
       `${RECAPTCHA_CONFIG.YESCAPTCHA_API_BASE}/createTask`,
       {
@@ -202,7 +205,7 @@ export class RecaptchaService {
             type: "RecaptchaV3TaskProxylessM1S7",
             websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
             websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
-            pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+            pageAction,
           },
         }),
       }
@@ -278,7 +281,8 @@ export class RecaptchaService {
    */
   private async createCapSolverTask(
     apiKey: string,
-    proxy?: string
+    proxy?: string,
+    pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION
   ): Promise<string> {
     const taskPayload: Record<string, unknown> = {
       type: proxy
@@ -286,7 +290,7 @@ export class RecaptchaService {
         : "ReCaptchaV3EnterpriseTaskProxyLess",
       websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
       websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
-      pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+      pageAction,
       minScore: 0.9,
     };
 
@@ -379,13 +383,14 @@ export class RecaptchaService {
    */
   private async getTokenFromRegotcha(
     apiKey: string,
-    maxRetries = 30
+    maxRetries = 30,
+    pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION
   ): Promise<RecaptchaTokenResult> {
     this.logger.log(
-      `[reCAPTCHA] Requesting token from Regotcha (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+      `[reCAPTCHA] Requesting token from Regotcha (Action: ${pageAction})`
     );
 
-    const taskId = await this.createRegotchaTask(apiKey);
+    const taskId = await this.createRegotchaTask(apiKey, pageAction);
     this.logger.log(`[reCAPTCHA] Task created (ID: ${taskId}), polling...`);
 
     const startTime = Date.now();
@@ -424,7 +429,7 @@ export class RecaptchaService {
   /**
    * Create a Regotcha task
    */
-  private async createRegotchaTask(clientKey: string): Promise<string> {
+  private async createRegotchaTask(clientKey: string, pageAction: string = RECAPTCHA_CONFIG.PAGE_ACTION): Promise<string> {
     const response = await fetch(
       `${RECAPTCHA_CONFIG.REGOTCHA_API_BASE}/createTask`,
       {
@@ -436,7 +441,7 @@ export class RecaptchaService {
             type: "ReCaptchaV3EnterpriseTaskProxyLess",
             websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
             websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
-            pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+            pageAction,
           },
         }),
       }
@@ -508,16 +513,17 @@ export class RecaptchaService {
    */
   private async getTokenFromCustomSolver(
     endpoint: string,
-    options: { proxy?: string; anchor?: string; reload?: string } = {}
+    options: { proxy?: string; anchor?: string; reload?: string; pageAction?: string } = {}
   ): Promise<RecaptchaTokenResult> {
+    const effectiveAction = options.pageAction ?? RECAPTCHA_CONFIG.PAGE_ACTION;
     this.logger.log(
-      `[reCAPTCHA] Requesting token from custom solver (Action: ${RECAPTCHA_CONFIG.PAGE_ACTION})`
+      `[reCAPTCHA] Requesting token from custom solver (Action: ${effectiveAction})`
     );
 
     const requestBody: CustomSolverRequest = {
       websiteURL: RECAPTCHA_CONFIG.WEBSITE_URL,
       websiteKey: RECAPTCHA_CONFIG.WEBSITE_KEY,
-      pageAction: RECAPTCHA_CONFIG.PAGE_ACTION,
+      pageAction: effectiveAction,
       headless: false,
     };
 

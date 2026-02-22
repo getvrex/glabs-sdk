@@ -5,7 +5,7 @@
  */
 
 import { getVideoApiConfig } from "../config/tier-config";
-import { DEFAULTS, ENDPOINTS } from "../constants";
+import { DEFAULTS, ENDPOINTS, RECAPTCHA_CONFIG } from "../constants";
 import type { GLabsLogger, ResolvedConfig } from "../types/client";
 import type { RecaptchaTokenResult } from "../types/recaptcha";
 import type {
@@ -59,14 +59,17 @@ export class VideoService {
   /**
    * Get reCAPTCHA token (required for all video operations)
    */
-  private async getRecaptchaToken() {
+  private async getRecaptchaToken(pageAction?: string) {
     if (!this.config.recaptcha) {
       throw new GLabsError(
         "reCAPTCHA configuration is required for video generation",
         "RECAPTCHA_REQUIRED"
       );
     }
-    return await this.recaptchaService.getToken(this.config.recaptcha);
+    return await this.recaptchaService.getToken({
+      ...this.config.recaptcha,
+      pageAction: pageAction ?? RECAPTCHA_CONFIG.PAGE_ACTION_VIDEO,
+    });
   }
 
   /**
@@ -169,7 +172,7 @@ export class VideoService {
       async (recaptchaResult) => {
         const payload = {
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
@@ -253,7 +256,7 @@ export class VideoService {
 
         const payload = {
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
@@ -314,7 +317,7 @@ export class VideoService {
       async (recaptchaResult) => {
         const payload = {
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
@@ -376,7 +379,7 @@ export class VideoService {
       async (recaptchaResult) => {
         const payload = {
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
@@ -434,7 +437,7 @@ export class VideoService {
             },
           ],
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId,
           },
         };
@@ -509,7 +512,7 @@ export class VideoService {
       async (recaptchaResult) => {
         const payload = {
           clientContext: {
-            recaptchaToken: recaptchaResult.token,
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
             sessionId: sessionId.trim(),
             projectId: projectId.trim(),
             tool: "PINHOLE",
