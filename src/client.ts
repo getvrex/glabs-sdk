@@ -46,6 +46,7 @@ import {
   ProjectService,
   RecaptchaService,
   VertexImageService,
+  VertexVideoService,
   VideoService,
 } from "./services";
 import type {
@@ -97,6 +98,7 @@ export class GLabsClient {
   private readonly recaptchaService: RecaptchaService;
   private readonly imageService: ImageService;
   private readonly vertexImageService?: VertexImageService;
+  private readonly vertexVideoService?: VertexVideoService;
   private readonly videoService: VideoService;
   private readonly projectService: ProjectService;
 
@@ -114,6 +116,9 @@ export class GLabsClient {
     });
     if (this.config.vertexAI) {
       this.vertexImageService = new VertexImageService({
+        config: this.config,
+      });
+      this.vertexVideoService = new VertexVideoService({
         config: this.config,
       });
     }
@@ -263,7 +268,8 @@ export class GLabsClient {
   readonly videos = {
     /**
      * Generate video from text prompt
-     * If no projectId provided, auto-selects first available project
+     * Uses Vertex AI Veo when vertexAI config is present, otherwise uses GLabs API.
+     * If no projectId provided, auto-selects first available project.
      */
     generateTextToVideo: async (
       options: Omit<GenerateTextToVideoOptions, "projectId" | "accountTier"> & {
@@ -271,6 +277,12 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
+      if (this.vertexVideoService) {
+        return this.vertexVideoService.generateTextToVideo({
+          prompt: options.prompt,
+          aspectRatio: options.aspectRatio,
+        });
+      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.generateTextToVideo({
         ...options,
@@ -281,7 +293,8 @@ export class GLabsClient {
 
     /**
      * Generate video from image (first frame or first+last frame)
-     * If no projectId provided, auto-selects first available project
+     * Uses Vertex AI Veo when vertexAI config is present, otherwise uses GLabs API.
+     * If no projectId provided, auto-selects first available project.
      */
     generateImageToVideo: async (
       options: Omit<
@@ -292,6 +305,16 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
+      if (this.vertexVideoService) {
+        return this.vertexVideoService.generateImageToVideo({
+          prompt: options.prompt,
+          image: { bytesBase64Encoded: options.startMediaId },
+          lastFrame: options.endMediaId
+            ? { bytesBase64Encoded: options.endMediaId }
+            : undefined,
+          aspectRatio: options.aspectRatio,
+        });
+      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.videoService.generateImageToVideo({
         ...options,

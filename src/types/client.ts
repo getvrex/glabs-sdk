@@ -13,6 +13,8 @@ export type VertexAIConfig = {
   projectId: string;
   /** Vertex AI location (default: "us-central1") */
   location?: string;
+  /** Video model ID (default: "veo-3.0-generate-preview") */
+  videoModelId?: string;
 };
 
 /** Configuration for the GLabs client */

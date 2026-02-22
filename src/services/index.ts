@@ -13,5 +13,7 @@ export {
 } from "./recaptcha.service";
 export type { VertexImageServiceOptions } from "./vertex-image.service";
 export { VertexImageService } from "./vertex-image.service";
+export type { VertexVideoServiceOptions } from "./vertex-video.service";
+export { VertexVideoService } from "./vertex-video.service";
 export type { VideoServiceOptions } from "./video.service";
 export { VideoService } from "./video.service";
