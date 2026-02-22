@@ -308,9 +308,9 @@ export class GLabsClient {
       if (this.vertexVideoService) {
         return this.vertexVideoService.generateImageToVideo({
           prompt: options.prompt,
-          image: { bytesBase64Encoded: options.startMediaId },
-          lastFrame: options.endMediaId
-            ? { bytesBase64Encoded: options.endMediaId }
+          image: { bytesBase64Encoded: options.imageBase64 || options.startMediaId },
+          lastFrame: (options.imageBase64End || options.endMediaId)
+            ? { bytesBase64Encoded: options.imageBase64End || options.endMediaId }
             : undefined,
           aspectRatio: options.aspectRatio,
         });
@@ -402,9 +402,13 @@ export class GLabsClient {
 
     /**
      * Poll a video operation until completion, failure, or timeout
+     * Routes to Vertex AI when vertexAI config is present.
      */
     pollOperation: (
       options: PollOperationOptions
-    ): Promise<VideoStatusResult> => this.videoService.pollOperation(options),
+    ): Promise<VideoStatusResult> =>
+      this.vertexVideoService
+        ? this.vertexVideoService.pollOperation(options)
+        : this.videoService.pollOperation(options),
   };
 }

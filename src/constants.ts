@@ -37,9 +37,9 @@ export const ENDPOINTS = {
   // Vertex AI video generation (long-running)
   VERTEX_VIDEO_GENERATE: (projectId: string, location: string, modelId: string) =>
     `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predictLongRunning`,
-  // Vertex AI operation polling
-  VERTEX_OPERATION: (location: string, operationName: string) =>
-    `https://${location}-aiplatform.googleapis.com/v1/${operationName}`,
+  // Vertex AI operation polling (POST fetchPredictOperation)
+  VERTEX_FETCH_PREDICT_OPERATION: (projectId: string, location: string, modelId: string) =>
+    `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:fetchPredictOperation`,
 } as const;
 
 /** reCAPTCHA service URLs */

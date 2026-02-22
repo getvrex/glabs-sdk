@@ -37,10 +37,14 @@ export type GenerateTextToVideoOptions = BaseVideoOptions & {
 export type GenerateImageToVideoOptions = BaseVideoOptions & {
   /** The prompt describing the video */
   prompt: string;
-  /** Media ID of the start/first frame image */
+  /** Media ID of the start/first frame image (GLabs path) */
   startMediaId: string;
   /** Media ID of the end/last frame image (optional, for FL mode) */
   endMediaId?: string;
+  /** Base64 image bytes for Vertex AI path (start/first frame) */
+  imageBase64?: string;
+  /** Base64 image bytes for Vertex AI path (end/last frame, optional) */
+  imageBase64End?: string;
 };
 
 /** Options for video extension */
@@ -135,8 +139,10 @@ export type PollOperationOptions = {
 export type VideoStatusResult = {
   /** Current status */
   status: string;
-  /** URL to the generated video */
+  /** URL to the generated video (GLabs path) */
   videoUrl?: string;
+  /** Base64-encoded video bytes (Vertex AI path) */
+  videoBase64?: string;
   /** URL to the video thumbnail */
   thumbnailUrl?: string;
   /** Duration in seconds */

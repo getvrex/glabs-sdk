@@ -231,14 +231,22 @@ export class VertexVideoService {
     const vertexConfig = this.getVertexConfig();
     const location = vertexConfig.location ?? "us-central1";
 
+    const modelId = vertexConfig.videoModelId ?? DEFAULT_VIDEO_MODEL;
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const url = ENDPOINTS.VERTEX_OPERATION(location, operationName);
+      const url = ENDPOINTS.VERTEX_FETCH_PREDICT_OPERATION(
+        vertexConfig.projectId,
+        location,
+        modelId
+      );
 
       const response = await fetchWithRetry(url, {
-        method: "GET",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${vertexConfig.accessToken}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ operationName }),
         maxRetries: this.config.maxRetries,
         retryDelay: this.config.retryDelay,
         timeout: this.config.timeout,
@@ -329,7 +337,7 @@ export class VertexVideoService {
 
       return {
         status: "MEDIA_GENERATION_STATUS_COMPLETED",
-        videoUrl: (firstVideo?.bytesBase64Encoded as string) ?? "",
+        videoBase64: (firstVideo?.bytesBase64Encoded as string) ?? "",
         mediaGenerationId: operationName,
       };
     }
