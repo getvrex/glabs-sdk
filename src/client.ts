@@ -45,6 +45,7 @@ import {
   ImageService,
   ProjectService,
   RecaptchaService,
+  VertexImageService,
   VideoService,
 } from "./services";
 import type {
@@ -95,6 +96,7 @@ export class GLabsClient {
   private readonly config: ResolvedConfig;
   private readonly recaptchaService: RecaptchaService;
   private readonly imageService: ImageService;
+  private readonly vertexImageService?: VertexImageService;
   private readonly videoService: VideoService;
   private readonly projectService: ProjectService;
 
@@ -110,6 +112,11 @@ export class GLabsClient {
       config: this.config,
       recaptchaService: this.recaptchaService,
     });
+    if (this.config.vertexAI) {
+      this.vertexImageService = new VertexImageService({
+        config: this.config,
+      });
+    }
     this.videoService = new VideoService({
       config: this.config,
       recaptchaService: this.recaptchaService,
@@ -129,6 +136,7 @@ export class GLabsClient {
       accountTier: config.accountTier ?? "pro",
       projectId: config.projectId,
       recaptcha: config.recaptcha,
+      vertexAI: config.vertexAI,
       logger: config.logger ?? defaultLogger,
       timeout: config.timeout ?? DEFAULTS.TIMEOUT,
       maxRetries: config.maxRetries ?? DEFAULTS.MAX_RETRIES,
@@ -224,11 +232,19 @@ export class GLabsClient {
 
     /**
      * Generate images from a prompt
-     * If no projectId provided, auto-selects first available project
+     * Uses Vertex AI Imagen when vertexAI config is present, otherwise uses GLabs API.
+     * If no projectId provided, auto-selects first available project.
      */
     generate: async (
       options: Omit<GenerateImageOptions, "projectId"> & { projectId?: string }
     ): Promise<GenerateImageResult> => {
+      if (this.vertexImageService) {
+        const projectId = options.projectId ?? this.config.projectId ?? "";
+        return this.vertexImageService.generateImage({
+          ...options,
+          projectId,
+        });
+      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.imageService.generateImage({
         ...options,

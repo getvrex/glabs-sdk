@@ -71,5 +71,13 @@ export type VideoModelMapping = {
   };
 };
 
+/** Vertex AI image API configuration */
+export type VertexImageApiConfig = {
+  /** Vertex AI model ID */
+  modelId: string;
+  /** Vertex AI location */
+  location: string;
+};
+
 /** Tier capabilities record */
 export type TierCapabilitiesRecord = Record<AccountTier, TierCapabilities>;

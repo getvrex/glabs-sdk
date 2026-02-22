@@ -5,6 +5,16 @@
 import type { AccountTier } from "./common";
 import type { RecaptchaConfig } from "./recaptcha";
 
+/** Vertex AI configuration for Imagen models */
+export type VertexAIConfig = {
+  /** OAuth2 access token for Vertex AI */
+  accessToken: string;
+  /** Google Cloud project ID */
+  projectId: string;
+  /** Vertex AI location (default: "us-central1") */
+  location?: string;
+};
+
 /** Configuration for the GLabs client */
 export type GLabsClientConfig = {
   /** Bearer token for authentication (Google AI APIs) */
@@ -17,6 +27,8 @@ export type GLabsClientConfig = {
   projectId?: string;
   /** reCAPTCHA configuration */
   recaptcha?: RecaptchaConfig;
+  /** Vertex AI configuration for Imagen models */
+  vertexAI?: VertexAIConfig;
   /** Custom logger (defaults to console) */
   logger?: GLabsLogger;
   /** Request timeout in milliseconds (default: 120000) */
@@ -41,6 +53,7 @@ export type ResolvedConfig = {
   accountTier: AccountTier;
   projectId?: string;
   recaptcha?: RecaptchaConfig;
+  vertexAI?: VertexAIConfig;
   logger: GLabsLogger;
   timeout: number;
   maxRetries: number;

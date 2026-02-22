@@ -12,7 +12,7 @@ export type VideoMode = "quality" | "fast";
 export type AspectRatio = "16:9" | "9:16" | "1:1";
 
 /** Image generation model */
-export type ImageModel = "nanobanana" | "nanobananapro";
+export type ImageModel = "nanobanana" | "nanobananapro" | "imagen-4" | "imagen-4-fast" | "imagen-4-ultra";
 
 /** Video generation type */
 export type VideoGenerationType =
