@@ -17,3 +17,8 @@ export type { VertexVideoServiceOptions } from "./vertex-video.service";
 export { VertexVideoService } from "./vertex-video.service";
 export type { VideoServiceOptions } from "./video.service";
 export { VideoService } from "./video.service";
+export type {
+  WhiskGenerateOptions,
+  WhiskGenerateResult,
+} from "./whisk.service";
+export { WhiskService } from "./whisk.service";
