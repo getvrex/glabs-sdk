@@ -21,6 +21,7 @@ import type {
   YesCaptchaGetResultResponse,
 } from "../types/recaptcha";
 import { GLabsError, sleep } from "../utils";
+import { ChromeRecaptchaService } from "./chrome-recaptcha.service";
 import { PlaywrightRecaptchaService } from "./playwright-recaptcha.service";
 
 /** Options for the reCAPTCHA service */
@@ -33,15 +34,44 @@ export type RecaptchaServiceOptions = {
 export class RecaptchaService {
   private readonly logger: GLabsLogger;
   private playwrightService?: PlaywrightRecaptchaService;
+  private chromeService?: ChromeRecaptchaService;
 
   constructor(options: RecaptchaServiceOptions = {}) {
     this.logger = options.logger ?? console;
   }
 
   /**
-   * Get a reCAPTCHA token using the configured provider
+   * Get a reCAPTCHA token using the configured provider.
+   * Falls back to config.fallback provider if primary fails.
    */
   async getToken(config: RecaptchaConfig): Promise<RecaptchaTokenResult> {
+    try {
+      return await this.getTokenFromProvider(config);
+    } catch (error) {
+      if (config.fallback) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `[reCAPTCHA] Primary provider "${config.provider}" failed (${msg}), falling back to "${config.fallback.provider}"...`
+        );
+        return await this.getTokenFromProvider(config.fallback);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Close persistent browser resources (chrome provider)
+   */
+  async close(): Promise<void> {
+    if (this.chromeService) {
+      await this.chromeService.close();
+    }
+  }
+
+  /**
+   * Get a token from a specific provider (no fallback logic)
+   */
+  private async getTokenFromProvider(config: RecaptchaConfig): Promise<RecaptchaTokenResult> {
     const { provider, apiKey, proxy, maxRetries, customEndpoint, anchor, reload, jwtToken, staticToken, pageAction } = config;
     const effectivePageAction = pageAction ?? RECAPTCHA_CONFIG.PAGE_ACTION;
 
@@ -69,6 +99,13 @@ export class RecaptchaService {
         );
       }
       return await this.getTokenFromVeo3Solver(jwtToken);
+    }
+
+    if (provider === "chrome") {
+      if (!this.chromeService) {
+        this.chromeService = new ChromeRecaptchaService({ logger: this.logger });
+      }
+      return await this.chromeService.getToken(config.chromeOptions, effectivePageAction);
     }
 
     if (provider === "playwright") {

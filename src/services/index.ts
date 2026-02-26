@@ -6,6 +6,8 @@ export type { ImageServiceOptions } from "./image.service";
 export { ImageService } from "./image.service";
 export type { ProjectServiceOptions } from "./project.service";
 export { ProjectService } from "./project.service";
+export type { ChromeRecaptchaServiceOptions } from "./chrome-recaptcha.service";
+export { ChromeRecaptchaService } from "./chrome-recaptcha.service";
 export type { PlaywrightRecaptchaServiceOptions } from "./playwright-recaptcha.service";
 export { PlaywrightRecaptchaService } from "./playwright-recaptcha.service";
 export type { RecaptchaServiceOptions } from "./recaptcha.service";

@@ -196,6 +196,14 @@ export class GLabsClient {
   }
 
   /**
+   * Close persistent resources (e.g. Chrome browser for reCAPTCHA).
+   * Call this when you're done with the client.
+   */
+  async close(): Promise<void> {
+    await this.recaptchaService.close();
+  }
+
+  /**
    * Get the configured account tier
    */
   get accountTier(): AccountTier {

@@ -45,6 +45,7 @@ export {
 } from "./config";
 // Services (for advanced usage)
 export {
+  ChromeRecaptchaService,
   defaultRecaptchaProvider,
   ImageService,
   OpenAICompatService,
@@ -84,6 +85,7 @@ PollOperationOptions,
   ImageReference,
   PaygateTier,
   // reCAPTCHA types
+  ChromeRecaptchaOptions,
   PlaywrightRecaptchaOptions,
   RecaptchaConfig,
   RecaptchaProvider,

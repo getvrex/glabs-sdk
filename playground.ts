@@ -4,10 +4,14 @@
  * Run with .env.local (default):
  *   bun playground.ts
  *
- * Run with Playwright browser reCAPTCHA (no API key needed):
+ * Run with Chrome persistent browser reCAPTCHA (recommended):
+ *   RECAPTCHA_PROVIDER=chrome bun playground.ts
+ *
+ * Run with Playwright ephemeral browser reCAPTCHA:
  *   RECAPTCHA_PROVIDER=playwright bun playground.ts
  *
  * Run specific tests:
+ *   TEST=chrome bun playground.ts         # Only test chrome reCAPTCHA
  *   TEST=playwright bun playground.ts     # Only test playwright reCAPTCHA
  *   TEST=image bun playground.ts          # Only test image generation
  *   TEST=upload bun playground.ts         # Only test image upload (new endpoint)
@@ -19,7 +23,8 @@
 import { GLabsClient } from "./src";
 import type { RecaptchaConfig } from "./src/types";
 
-// Load env from .env and .env.local (latter overrides)
+// Load env from .env and .env.local (latter overrides, but CLI env vars take priority)
+const cliEnv = { ...process.env };
 for (const envFileName of [".env", ".env.local"]) {
   const envFile = Bun.file(envFileName);
   if (await envFile.exists()) {
@@ -31,6 +36,12 @@ for (const envFileName of [".env", ".env.local"]) {
         process.env[key.trim()] = value;
       }
     }
+  }
+}
+// Restore CLI env vars (they take priority over .env files)
+for (const [key, value] of Object.entries(cliEnv)) {
+  if (value !== undefined) {
+    process.env[key] = value;
   }
 }
 
@@ -49,18 +60,38 @@ if (!bearerToken) {
   process.exit(1);
 }
 
-// Configure recaptcha: explicit provider > veo3solver > playwright > regotcha > custom > capsolver
+// Build YesCaptcha fallback config (used by chrome/playwright providers)
+const yescaptchaApiKey = process.env.YESCAPTCHA_API_KEY;
+const yescaptchaFallback: RecaptchaConfig | undefined = yescaptchaApiKey
+  ? { provider: "yescaptcha", apiKey: yescaptchaApiKey }
+  : undefined;
+
+// Configure recaptcha: explicit provider > chrome > veo3solver > playwright > regotcha > custom > capsolver
 const getRecaptchaConfig = (): RecaptchaConfig | undefined => {
-  // Explicit playwright provider
-  if (recaptchaProvider === "playwright") {
+  // Explicit chrome provider (persistent real Chrome, recommended)
+  if (recaptchaProvider === "chrome") {
     return {
-      provider: "playwright",
-      playwrightOptions: {
-        headless: false, // Headed mode gets higher reCAPTCHA scores
+      provider: "chrome",
+      chromeOptions: {
+        headless: false,
         projectId,
         maxRetries: 3,
         timeout: 30000,
       },
+      fallback: yescaptchaFallback,
+    };
+  }
+  // Explicit playwright provider (ephemeral Chromium)
+  if (recaptchaProvider === "playwright") {
+    return {
+      provider: "playwright",
+      playwrightOptions: {
+        headless: false,
+        projectId,
+        maxRetries: 3,
+        timeout: 30000,
+      },
+      fallback: yescaptchaFallback,
     };
   }
   if (veo3solverJwtToken) {
@@ -80,6 +111,9 @@ const getRecaptchaConfig = (): RecaptchaConfig | undefined => {
   if (recaptchaApiKey) {
     return { provider: "capsolver", apiKey: recaptchaApiKey };
   }
+  if (yescaptchaApiKey) {
+    return { provider: "yescaptcha", apiKey: yescaptchaApiKey };
+  }
   return undefined;
 };
 
@@ -98,10 +132,32 @@ const shouldRun = (test: string) => !testFilter || testFilter === "all" || testF
 
 console.log("=== GLabs SDK Playground ===");
 console.log(`Provider:      ${recaptchaConfig?.provider ?? "none"}`);
+console.log(`Fallback:      ${recaptchaConfig?.fallback?.provider ?? "none"}`);
 console.log(`Project:       ${projectId ?? "auto"}`);
 console.log(`SessionToken:  ${sessionToken ? sessionToken.substring(0, 30) + "..." : "none"}`);
 console.log(`Test:          ${testFilter ?? "all (default)"}`);
 console.log(`Session:       ${sessionId}\n`);
+
+// ---------------------------------------------------------------------------
+// Test: Chrome persistent reCAPTCHA
+// ---------------------------------------------------------------------------
+if (shouldRun("chrome")) {
+  console.log("--- Test: Chrome Persistent reCAPTCHA ---");
+  try {
+    const { ChromeRecaptchaService } = await import("./src/services/chrome-recaptcha.service");
+    const service = new ChromeRecaptchaService({ logger: console });
+    const result = await service.getToken(
+      { headless: false, projectId, maxRetries: 2, timeout: 30000 },
+      "IMAGE_GENERATION"
+    );
+    console.log("  Token obtained:", result.token.substring(0, 60) + "...");
+    console.log("  Length:", result.token.length);
+    console.log("  PASS\n");
+    await service.close();
+  } catch (error) {
+    console.log("  FAIL:", (error as Error).message, "\n");
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Test: Playwright reCAPTCHA
@@ -270,5 +326,8 @@ if (shouldRun("video") && projectId) {
     }
   }
 }
+
+// Cleanup persistent browser
+await client.close();
 
 console.log("=== Done ===");

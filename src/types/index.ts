@@ -55,6 +55,7 @@ export type {
 export type {
   CapSolverCreateTaskResponse,
   CapSolverGetResultResponse,
+  ChromeRecaptchaOptions,
   PlaywrightRecaptchaOptions,
   RecaptchaConfig,
   RecaptchaProvider,

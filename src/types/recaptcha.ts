@@ -3,7 +3,7 @@
  */
 
 /** Supported reCAPTCHA service providers */
-export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custom" | "veo3solver" | "playwright";
+export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custom" | "veo3solver" | "playwright" | "chrome";
 
 /** reCAPTCHA configuration */
 export type RecaptchaConfig = {
@@ -29,6 +29,10 @@ export type RecaptchaConfig = {
   pageAction?: string;
   /** Playwright browser options (only for playwright provider) */
   playwrightOptions?: PlaywrightRecaptchaOptions;
+  /** Chrome browser options (only for chrome provider) */
+  chromeOptions?: ChromeRecaptchaOptions;
+  /** Fallback provider config when primary provider fails to produce a token */
+  fallback?: RecaptchaConfig;
 };
 
 /** Playwright browser reCAPTCHA options */
@@ -47,6 +51,26 @@ export type PlaywrightRecaptchaOptions = {
   maxRetries?: number;
   /** Timeout for script execution in ms (default: 30000) */
   timeout?: number;
+};
+
+/** Chrome browser reCAPTCHA options (persistent context, real Chrome) */
+export type ChromeRecaptchaOptions = {
+  /** Run browser in headless mode (default: false - headed gets higher reCAPTCHA scores) */
+  headless?: boolean;
+  /** Browser proxy configuration */
+  proxy?: {
+    server: string;
+    username?: string;
+    password?: string;
+  };
+  /** Project ID for the page URL context */
+  projectId?: string;
+  /** Maximum retry attempts per token request (default: 3) */
+  maxRetries?: number;
+  /** Timeout for page load/script execution in ms (default: 30000) */
+  timeout?: number;
+  /** Path for persistent browser profile (default: ~/.glabs-sdk/chrome-profile) */
+  userDataDir?: string;
 };
 
 /** Result from reCAPTCHA token request */
