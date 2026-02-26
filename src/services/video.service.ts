@@ -179,13 +179,15 @@ export class VideoService {
             tool: "PINHOLE",
             userPaygateTier: config.userPaygateTier,
           },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [
             {
               aspectRatio: config.aspectRatioEnum,
               seed: requestSeed,
-              textInput: { prompt: prompt.trim() },
+              textInput: { structuredPrompt: { parts: [{ text: prompt.trim() }] } },
               videoModelKey: config.videoModelKey,
-              metadata: { sceneId: generatedSceneId },
+              metadata: {},
             },
           ],
         };
@@ -218,6 +220,7 @@ export class VideoService {
       videoMode,
       startMediaId,
       endMediaId,
+      cropCoordinates,
       seed,
       sceneId,
     } = options;
@@ -242,13 +245,18 @@ export class VideoService {
     return this.executeWithRecaptchaRetry(
       "Image-to-video",
       async (recaptchaResult) => {
+        const startImage: Record<string, unknown> = { mediaId: startMediaId.trim() };
+        if (cropCoordinates) {
+          startImage.cropCoordinates = cropCoordinates;
+        }
+
         const requestObject: Record<string, unknown> = {
           aspectRatio: config.aspectRatioEnum,
           seed: requestSeed,
-          textInput: { prompt: prompt.trim() },
+          textInput: { structuredPrompt: { parts: [{ text: prompt.trim() }] } },
           videoModelKey: config.videoModelKey,
-          startImage: { mediaId: startMediaId.trim() },
-          metadata: { sceneId: generatedSceneId },
+          startImage,
+          metadata: {},
         };
 
         if (hasEndImage && endMediaId) {
@@ -263,6 +271,8 @@ export class VideoService {
             tool: "PINHOLE",
             userPaygateTier: config.userPaygateTier,
           },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [requestObject],
         };
 
@@ -293,10 +303,8 @@ export class VideoService {
       aspectRatio,
       accountTier,
       videoMode,
-      startFrameIndex,
-      endFrameIndex,
       seed,
-      sceneId,
+      workflowId,
     } = options;
 
     const config = getVideoApiConfig(
@@ -307,11 +315,7 @@ export class VideoService {
     );
 
     const requestSeed = seed ?? generateSeed();
-    const generatedSceneId = sceneId?.trim() || generateId();
-
-    const finalStartFrameIndex =
-      startFrameIndex ?? DEFAULTS.VIDEO_EXTEND_START_FRAME;
-    const finalEndFrameIndex = endFrameIndex ?? DEFAULTS.VIDEO_EXTEND_END_FRAME;
+    const generatedSceneId = options.sceneId?.trim() || generateId();
 
     return this.executeWithRecaptchaRetry(
       "Extend video",
@@ -324,18 +328,18 @@ export class VideoService {
             tool: "PINHOLE",
             userPaygateTier: config.userPaygateTier,
           },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [
             {
-              textInput: { prompt: prompt.trim() },
+              textInput: { structuredPrompt: { parts: [{ text: prompt.trim() }] } },
               videoInput: {
                 mediaId: mediaId.trim(),
-                startFrameIndex: finalStartFrameIndex,
-                endFrameIndex: finalEndFrameIndex,
               },
               videoModelKey: config.videoModelKey,
               aspectRatio: config.aspectRatioEnum,
               seed: requestSeed,
-              metadata: { sceneId: generatedSceneId },
+              metadata: workflowId ? { workflowId } : {},
             },
           ],
         };
@@ -367,13 +371,13 @@ export class VideoService {
       aspectRatio,
       accountTier,
       seed,
-      sceneId,
+      workflowId,
     } = options;
 
     const config = getVideoApiConfig("reshoot", accountTier, aspectRatio);
 
     const requestSeed = seed ?? generateSeed();
-    const generatedSceneId = sceneId?.trim() || generateId();
+    const generatedSceneId = options.sceneId?.trim() || generateId();
 
     return this.executeWithRecaptchaRetry(
       "Camera control",
@@ -386,14 +390,17 @@ export class VideoService {
             tool: "PINHOLE",
             userPaygateTier: config.userPaygateTier,
           },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [
             {
               seed: requestSeed,
               aspectRatio: config.aspectRatioEnum,
               videoInput: { mediaId: mediaId.trim() },
+              textInput: { structuredPrompt: { parts: [] } },
               reshootMotionType,
               videoModelKey: config.videoModelKey,
-              metadata: { sceneId: generatedSceneId },
+              metadata: workflowId ? { workflowId } : {},
             },
           ],
         };
@@ -412,44 +419,45 @@ export class VideoService {
   }
 
   /**
-   * Upscale a video to HD (1080p)
+   * Upscale a video to 4K
    */
   async upsampleVideo(
     options: UpsampleVideoOptions
   ): Promise<VideoOperationResult> {
-    const { originalMediaId, sessionId, aspectRatio, seed, sceneId } = options;
+    const { originalMediaId, sessionId, projectId, accountTier, aspectRatio, seed, workflowId, resolution } = options;
 
     const videoAspectRatio = this.getVideoAspectRatioEnum(aspectRatio);
+    const config = getVideoApiConfig("upsample", accountTier, aspectRatio);
 
-    const finalSceneId = sceneId?.trim() || generateId();
+    const finalSceneId = options.sceneId?.trim() || generateId();
     const finalSeed = seed ?? generateSeed();
 
     return this.executeWithRecaptchaRetry(
       "Upscale",
       async (recaptchaResult) => {
         const payload = {
+          clientContext: {
+            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
+            sessionId: sessionId.trim(),
+            projectId: projectId.trim(),
+            tool: "PINHOLE",
+            userPaygateTier: config.userPaygateTier,
+          },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [
             {
               aspectRatio: videoAspectRatio,
               seed: finalSeed,
               videoInput: { mediaId: originalMediaId },
-              videoModelKey: "veo_2_1080p_upsampler_8s",
-              metadata: { sceneId: finalSceneId },
+              videoModelKey: DEFAULTS.VIDEO_UPSAMPLE_MODEL,
+              resolution: resolution ?? "VIDEO_RESOLUTION_4K",
+              metadata: workflowId ? { workflowId } : {},
             },
           ],
-          clientContext: {
-            recaptchaContext: { token: recaptchaResult.token, applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB" },
-            sessionId,
-          },
         };
 
         const headers = this.buildHeaders(recaptchaResult);
-        if (!recaptchaResult.userAgent) {
-          headers["User-Agent"] =
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
-        }
-        headers.Accept = "*/*";
-        headers["Accept-Language"] = "en-US,en;q=0.9";
 
         const response = await fetch(ENDPOINTS.UPSAMPLE_VIDEO, {
           method: "POST",
@@ -519,13 +527,15 @@ export class VideoService {
             tool: "PINHOLE",
             userPaygateTier: config.userPaygateTier,
           },
+          useV2ModelConfig: true,
+          mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [
             {
               aspectRatio: config.aspectRatioEnum,
-              metadata: { sceneId: generatedSceneId },
+              metadata: {},
               referenceImages,
               seed: requestSeed,
-              textInput: { prompt: prompt.trim() },
+              textInput: { structuredPrompt: { parts: [{ text: prompt.trim() }] } },
               videoModelKey: config.videoModelKey,
             },
           ],
@@ -546,11 +556,44 @@ export class VideoService {
 
   /**
    * Check video generation status
+   *
+   * Supports both new format (mediaId + projectId) and legacy format (operationName + sceneId).
    */
   async checkStatus(
     options: CheckVideoStatusOptions
   ): Promise<VideoStatusResult> {
-    const { operationName, sceneId } = options;
+    const { operationName, sceneId, mediaId, projectId } = options;
+
+    // New format: use media[] payload
+    if (mediaId && projectId) {
+      const payload = {
+        media: [{ name: mediaId, projectId }],
+      };
+
+      const headers = this.buildHeaders();
+
+      const response = await fetch(ENDPOINTS.CHECK_VIDEO_STATUS, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw parseGoogleApiError(errorData, response.status);
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+      return this.parseMediaStatusResult(data);
+    }
+
+    // Legacy format: use operations[] payload
+    if (!operationName) {
+      throw new GLabsError(
+        "Either mediaId+projectId or operationName is required for checkStatus",
+        "INVALID_ARGUMENT"
+      );
+    }
 
     const payload = {
       operations: [
@@ -576,6 +619,14 @@ export class VideoService {
     }
 
     const data = (await response.json()) as Record<string, unknown>;
+
+    // Try new format first (response may contain media[])
+    const mediaArray = data.media as Record<string, unknown>[] | undefined;
+    if (mediaArray && mediaArray.length > 0) {
+      return this.parseMediaStatusResult(data);
+    }
+
+    // Fall back to legacy operations[] parsing
     const operations = (data.operations as Record<string, unknown>[]) ?? [];
 
     if (operations.length === 0) {
@@ -625,13 +676,15 @@ export class VideoService {
     const {
       operationName,
       sceneId,
+      mediaId,
+      projectId,
       maxAttempts = 60,
       intervalMs = 10000,
       onProgress,
     } = options;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const result = await this.checkStatus({ operationName, sceneId });
+      const result = await this.checkStatus({ operationName, sceneId, mediaId, projectId });
 
       if (onProgress) {
         onProgress(result, attempt);
@@ -640,6 +693,7 @@ export class VideoService {
       // Completed successfully
       if (
         result.status === "MEDIA_GENERATION_STATUS_COMPLETED" ||
+        result.status === "MEDIA_GENERATION_STATUS_SUCCESSFUL" ||
         (result.videoUrl && result.videoUrl.length > 0)
       ) {
         return result;
@@ -669,6 +723,51 @@ export class VideoService {
   }
 
   /**
+   * Parse the new media[] status response format
+   */
+  private parseMediaStatusResult(
+    data: Record<string, unknown>
+  ): VideoStatusResult {
+    const mediaArray = (data.media as Record<string, unknown>[]) ?? [];
+
+    if (mediaArray.length === 0) {
+      throw new GLabsError("No media in response", "PARSE_ERROR");
+    }
+
+    const media = mediaArray[0] as Record<string, unknown>;
+    const mediaMetadata = media.mediaMetadata as Record<string, unknown> | undefined;
+    const mediaStatus = mediaMetadata?.mediaStatus as Record<string, unknown> | undefined;
+    const status = (mediaStatus?.mediaGenerationStatus as string) ?? "UNKNOWN";
+
+    const videoObj = media.video as Record<string, unknown> | undefined;
+    const generatedVideo = videoObj?.generatedVideo as Record<string, unknown> | undefined;
+
+    const videoUrl =
+      (generatedVideo?.fifeUrl as string) ??
+      (generatedVideo?.videoUrl as string) ??
+      "";
+    const thumbnailUrl =
+      (generatedVideo?.servingBaseUri as string) ??
+      (generatedVideo?.thumbnailUrl as string) ??
+      "";
+    const duration = (generatedVideo?.durationSeconds as number) ?? 0;
+    const mediaGenerationId = (generatedVideo?.mediaGenerationId as string) ?? undefined;
+
+    const errorObj = mediaStatus?.error as Record<string, unknown> | undefined;
+    const errorMessage = errorObj?.message as string | undefined;
+
+    return {
+      status,
+      videoUrl,
+      thumbnailUrl,
+      duration,
+      mediaGenerationId,
+      error: errorMessage,
+      remainingCredits: data.remainingCredits as number | undefined,
+    };
+  }
+
+  /**
    * Parse operation result from response
    */
   private parseOperationResult(
@@ -693,9 +792,15 @@ export class VideoService {
       );
     }
 
+    // Extract mediaId from media[] array if present in response
+    const mediaArray = (data.media as Record<string, unknown>[]) ?? [];
+    const firstMedia = mediaArray.length > 0 ? mediaArray[0] as Record<string, unknown> : undefined;
+    const mediaId = (firstMedia?.name as string) ?? undefined;
+
     return {
       operationName,
       sceneId: (operation.sceneId as string) ?? defaultSceneId,
+      mediaId,
       status: (operation.status as string) ?? "MEDIA_GENERATION_STATUS_PENDING",
       remainingCredits: data.remainingCredits as number | undefined,
     };

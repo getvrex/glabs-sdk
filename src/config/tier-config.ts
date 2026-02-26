@@ -182,13 +182,34 @@ const RESHOOT_VIDEO_MODELS: Record<AspectRatio, string> = {
   "1:1": "veo_3_0_reshoot_square",
 };
 
-const REFERENCE_IMAGES_VIDEO_MODELS: Record<AccountTier, string> = {
-  pro: "veo_3_0_r2v_fast",
-  ultra: "veo_3_0_r2v_fast_ultra",
+const REFERENCE_IMAGES_VIDEO_MODELS: VideoModelMapping = {
+  pro: {
+    fast: {
+      "16:9": "veo_3_1_r2v_fast_landscape",
+      "9:16": "veo_3_1_r2v_fast_portrait",
+      "1:1": "veo_3_1_r2v_fast_square",
+    },
+    quality: {
+      "16:9": "veo_3_1_r2v_fast_landscape",
+      "9:16": "veo_3_1_r2v_fast_portrait",
+      "1:1": "veo_3_1_r2v_fast_square",
+    },
+  },
+  ultra: {
+    fast: {
+      "16:9": "veo_3_1_r2v_fast_landscape_ultra",
+      "9:16": "veo_3_1_r2v_fast_portrait_ultra",
+      "1:1": "veo_3_1_r2v_fast_square_ultra",
+    },
+    quality: {
+      "16:9": "veo_3_1_r2v_fast_landscape_ultra",
+      "9:16": "veo_3_1_r2v_fast_portrait_ultra",
+      "1:1": "veo_3_1_r2v_fast_square_ultra",
+    },
+  },
 };
-// Note: pro reference-images model has no _ultra suffix — already correct.
 
-const UPSAMPLE_VIDEO_MODEL = "veo_2_1080p_upsampler_8s";
+const UPSAMPLE_VIDEO_MODEL = "veo_3_1_upsampler_4k";
 
 // ============================================================================
 // Adapter Functions (Public Interface)
@@ -266,7 +287,15 @@ export function getVideoModelKey(
   }
 
   if (type === "reference-images") {
-    return REFERENCE_IMAGES_VIDEO_MODELS[tier];
+    const effectiveMode = getEffectiveVideoMode(tier, videoMode);
+    const modelKey =
+      REFERENCE_IMAGES_VIDEO_MODELS[tier]?.[effectiveMode]?.[aspectRatio];
+    if (!modelKey) {
+      throw new Error(
+        `Reference images model config not found: tier=${tier}, mode=${effectiveMode}, aspect=${aspectRatio}`
+      );
+    }
+    return modelKey;
   }
 
   const effectiveMode = getEffectiveVideoMode(tier, videoMode);

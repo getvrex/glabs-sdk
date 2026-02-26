@@ -14,6 +14,8 @@ import type {
   GenerateImageResult,
   UploadImageOptions,
   UploadImageResult,
+  UpsampleImageOptions,
+  UpsampleImageResult,
 } from "../types/image";
 import {
   buildHeaders,
@@ -83,22 +85,76 @@ export class ImageService {
    * Upload an image to Google Labs
    */
   async uploadImage(options: UploadImageOptions): Promise<UploadImageResult> {
-    const { imageBase64, sessionId, aspectRatio } = options;
+    const { imageBase64, sessionId, projectId, fileName } = options;
 
     // Process base64 data
     let base64Data = imageBase64.trim();
-    let mimeType = "image/jpeg";
+    let detectedMimeType = "image/png";
 
     const dataUrlMatch = DATA_URL_REGEX.exec(base64Data);
     if (dataUrlMatch?.[2]) {
-      mimeType = dataUrlMatch[1] ?? mimeType;
+      detectedMimeType = dataUrlMatch[1] ?? detectedMimeType;
       base64Data = dataUrlMatch[2];
     }
 
     const sanitizedBase64 = base64Data.replace(/\s/g, "");
+    const mimeType = options.mimeType ?? detectedMimeType;
 
-    // Normalize aspect ratio
-    const normalizedAspectRatio = this.getImageAspectRatioEnum(aspectRatio);
+    // Use new flow/uploadImage endpoint if projectId is provided
+    if (projectId) {
+      const payload = {
+        clientContext: {
+          projectId: projectId.trim(),
+          tool: "PINHOLE",
+        },
+        imageBytes: sanitizedBase64,
+        isUserUploaded: true,
+        isHidden: false,
+        mimeType,
+        fileName: fileName ?? "uploaded-image.png",
+      };
+
+      const headers = buildHeaders(this.config.bearerToken);
+
+      const response = await fetchWithRetry(ENDPOINTS.UPLOAD_IMAGE_FLOW, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        maxRetries: this.config.maxRetries,
+        retryDelay: this.config.retryDelay,
+        timeout: this.config.timeout,
+        logger: this.logger,
+      });
+
+      if (!response.ok) {
+        throw new GLabsError(
+          `Upload failed: ${response.status} ${response.statusText}`,
+          "UPLOAD_ERROR",
+          response.status
+        );
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+      this.logger.log("[Image] Upload response:", JSON.stringify(data, null, 2));
+
+      // New response format: { media: { name: "...", ... }, workflow: { ... } }
+      const media = data.media as Record<string, unknown> | undefined;
+      const mediaName = media?.name as string | undefined;
+      const image = media?.image as Record<string, unknown> | undefined;
+      const dimensions = image?.dimensions as Record<string, unknown> | undefined;
+
+      return {
+        mediaGenerationId: mediaName,
+        mediaId: mediaName,
+        width: dimensions?.width as number | undefined,
+        height: dimensions?.height as number | undefined,
+        workflowId: (media?.workflowId as string | undefined) ?? ((data.workflow as Record<string, unknown>)?.name as string | undefined),
+        sessionId: sessionId.trim(),
+      };
+    }
+
+    // Legacy endpoint fallback
+    const normalizedAspectRatio = this.getImageAspectRatioEnum(options.aspectRatio);
 
     const payload = {
       imageInput: {
@@ -230,7 +286,7 @@ export class ImageService {
           seed: requestSeed,
           imageModelName,
           imageAspectRatio: imageConfig.aspectRatioEnum,
-          prompt: requestPrompt,
+          structuredPrompt: { parts: [{ text: requestPrompt }] },
           imageInputs,
         };
       });
@@ -246,6 +302,8 @@ export class ImageService {
         tool: "PINHOLE",
       },
       requests: buildRequests(recaptchaToken),
+      mediaGenerationContext: { batchId: crypto.randomUUID() },
+      useNewMedia: true,
     });
 
     const url = ENDPOINTS.BATCH_GENERATE_IMAGES(projectId.trim());
@@ -313,6 +371,116 @@ export class ImageService {
 
     throw new GLabsError(
       `Image generation failed after ${maxEvalRetries} reCAPTCHA attempts`,
+      "RECAPTCHA_EVAL_FAILED"
+    );
+  }
+
+  /**
+   * Upsample (upscale) an image to a higher resolution
+   */
+  async upsampleImage(
+    options: UpsampleImageOptions
+  ): Promise<UpsampleImageResult> {
+    const {
+      mediaId,
+      targetResolution = "UPSAMPLE_IMAGE_RESOLUTION_2K",
+      projectId,
+      sessionId,
+    } = options;
+
+    // Require reCAPTCHA configuration
+    if (!this.config.recaptcha) {
+      throw new GLabsError(
+        "reCAPTCHA configuration is required for image upsampling",
+        "RECAPTCHA_REQUIRED"
+      );
+    }
+
+    const buildPayload = (recaptchaToken: string) => ({
+      mediaId,
+      targetResolution,
+      clientContext: {
+        recaptchaContext: {
+          token: recaptchaToken,
+          applicationType: "RECAPTCHA_APPLICATION_TYPE_WEB",
+        },
+        projectId: projectId?.trim() ?? "",
+        tool: "PINHOLE",
+        userPaygateTier: "PAYGATE_TIER_TWO",
+        sessionId: sessionId?.trim() ?? "",
+      },
+    });
+
+    // Don't retry if using static token - it won't change between attempts
+    const usingStaticToken = Boolean(this.config.recaptcha.staticToken);
+    const maxEvalRetries = usingStaticToken
+      ? 1
+      : DEFAULTS.RECAPTCHA_EVAL_MAX_RETRIES;
+
+    // Retry loop for reCAPTCHA evaluation failures
+    for (let attempt = 1; attempt <= maxEvalRetries; attempt++) {
+      this.logger.log(
+        `[Image] Upsample: Fetching reCAPTCHA token (attempt ${attempt}/${maxEvalRetries})...`
+      );
+      const recaptchaResult = await this.recaptchaService.getToken(
+        this.config.recaptcha
+      );
+      this.logger.log("[Image] Upsample: reCAPTCHA token obtained, upsampling...");
+
+      const headers = buildHeadersWithFingerprint(
+        this.config.bearerToken,
+        recaptchaResult
+      );
+      headers["Content-Type"] = "text/plain;charset=UTF-8";
+
+      const response = await fetchWithRetry(ENDPOINTS.UPSAMPLE_IMAGE, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(buildPayload(recaptchaResult.token)),
+        maxRetries: this.config.maxRetries,
+        retryDelay: this.config.retryDelay,
+        timeout: this.config.timeout,
+        logger: this.logger,
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as Record<string, unknown>;
+        const encodedImage = data.encodedImage as string | undefined;
+        if (!encodedImage) {
+          throw new GLabsError(
+            "No encodedImage in upsample response",
+            "PARSE_ERROR"
+          );
+        }
+        return { encodedImage };
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+
+      // If reCAPTCHA evaluation failed, retry with new token (unless using static token)
+      if (isRecaptchaEvaluationFailed(response.status, errorData)) {
+        if (usingStaticToken) {
+          this.logger.error(
+            "[Image] Upsample: reCAPTCHA evaluation failed with static token - not retrying"
+          );
+          throw parseGoogleApiError(errorData, response.status);
+        }
+        this.logger.warn(
+          `[Image] Upsample: reCAPTCHA evaluation failed (attempt ${attempt}/${maxEvalRetries}), retrying with new token...`
+        );
+        continue;
+      }
+
+      // Other error - throw immediately
+      this.logger.error(
+        "[Image] Upsample API error:",
+        JSON.stringify(errorData, null, 2)
+      );
+      throw parseGoogleApiError(errorData, response.status);
+    }
+
+    throw new GLabsError(
+      `Image upsample failed after ${maxEvalRetries} reCAPTCHA attempts`,
       "RECAPTCHA_EVAL_FAILED"
     );
   }

@@ -18,6 +18,12 @@ export type UploadImageOptions = {
   sessionId: string;
   /** Aspect ratio for the uploaded image */
   aspectRatio?: AspectRatio;
+  /** Project ID (required for flow/uploadImage endpoint) */
+  projectId?: string;
+  /** File name for the uploaded image */
+  fileName?: string;
+  /** MIME type override (auto-detected from data URL if not provided) */
+  mimeType?: string;
 };
 
 /** Result from uploading an image */
@@ -78,6 +84,24 @@ export type GenerateImageResult = {
   images: GeneratedImage[];
   /** Session ID */
   sessionId: string;
+};
+
+/** Options for upsampling an image */
+export type UpsampleImageOptions = {
+  /** Media ID of the image to upsample */
+  mediaId: string;
+  /** Target resolution */
+  targetResolution?: "UPSAMPLE_IMAGE_RESOLUTION_2K" | "UPSAMPLE_IMAGE_RESOLUTION_4K";
+  /** Project ID */
+  projectId?: string;
+  /** Session ID */
+  sessionId?: string;
+};
+
+/** Result from upsampling an image */
+export type UpsampleImageResult = {
+  /** Base64 encoded upsampled image */
+  encodedImage: string;
 };
 
 /** Options for getting credit status */

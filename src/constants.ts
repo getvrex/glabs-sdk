@@ -12,6 +12,8 @@ export const GLABS_FX_API_BASE = "https://labs.google/fx/api/trpc";
 export const ENDPOINTS = {
   // Image endpoints
   UPLOAD_IMAGE: `${GLABS_API_BASE}:uploadUserImage`,
+  UPLOAD_IMAGE_FLOW: `${GLABS_API_BASE}/flow/uploadImage`,
+  UPSAMPLE_IMAGE: `${GLABS_API_BASE}/flow/upsampleImage`,
   GET_CREDIT_STATUS: `${GLABS_API_BASE}/whisk:getVideoCreditStatus`,
 
   // Image generation (requires projectId in path)
@@ -76,6 +78,7 @@ export const DEFAULTS = {
   RECAPTCHA_EVAL_MAX_RETRIES: 20,
   VIDEO_EXTEND_START_FRAME: 168,
   VIDEO_EXTEND_END_FRAME: 191,
+  VIDEO_UPSAMPLE_MODEL: "veo_3_1_upsampler_4k",
 } as const;
 
 /** Error codes */

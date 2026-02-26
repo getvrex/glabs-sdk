@@ -7,6 +7,7 @@ import type {
   AspectRatio,
   ReshootMotionType,
   VideoMode,
+  VideoResolution,
 } from "./common";
 
 /** Base options for video generation */
@@ -45,6 +46,8 @@ export type GenerateImageToVideoOptions = BaseVideoOptions & {
   imageBase64?: string;
   /** Base64 image bytes for Vertex AI path (end/last frame, optional) */
   imageBase64End?: string;
+  /** Crop coordinates for the start image */
+  cropCoordinates?: { top?: number; left?: number; bottom?: number; right?: number };
 };
 
 /** Options for video extension */
@@ -53,10 +56,12 @@ export type ExtendVideoOptions = BaseVideoOptions & {
   mediaId: string;
   /** The prompt for the extended portion */
   prompt: string;
-  /** Start frame index for the extension point */
+  /** Start frame index for the extension point (deprecated, no longer sent) */
   startFrameIndex?: number;
-  /** End frame index for the extension point */
+  /** End frame index for the extension point (deprecated, no longer sent) */
   endFrameIndex?: number;
+  /** Workflow ID for tracking (replaces sceneId in metadata) */
+  workflowId?: string;
 };
 
 /** Options for video reshoot (camera control) */
@@ -77,6 +82,8 @@ export type ReshootVideoOptions = {
   seed?: number;
   /** Scene ID for tracking */
   sceneId?: string;
+  /** Workflow ID for tracking (replaces sceneId in metadata) */
+  workflowId?: string;
 };
 
 /** Options for video upscaling */
@@ -85,12 +92,20 @@ export type UpsampleVideoOptions = {
   originalMediaId: string;
   /** Session ID for the request */
   sessionId: string;
+  /** Project ID for the request */
+  projectId: string;
+  /** Account tier */
+  accountTier: AccountTier;
   /** Aspect ratio of the video */
   aspectRatio: AspectRatio;
   /** Random seed for reproducible generation */
   seed?: number;
   /** Scene ID for tracking */
   sceneId?: string;
+  /** Workflow ID for tracking (replaces sceneId in metadata) */
+  workflowId?: string;
+  /** Video resolution for upsampling (default: VIDEO_RESOLUTION_4K) */
+  resolution?: VideoResolution;
 };
 
 /** Options for reference images video generation */
@@ -107,6 +122,8 @@ export type VideoOperationResult = {
   operationName: string;
   /** Scene ID */
   sceneId: string;
+  /** Media ID from the response (media[].name field) */
+  mediaId?: string;
   /** Current status */
   status: string;
   /** Remaining credits after operation */
@@ -115,18 +132,26 @@ export type VideoOperationResult = {
 
 /** Options for checking video status */
 export type CheckVideoStatusOptions = {
-  /** Operation name from the generation request */
-  operationName: string;
-  /** Scene ID (optional) */
+  /** Operation name from the generation request (legacy format) */
+  operationName?: string;
+  /** Scene ID (optional, legacy format) */
   sceneId?: string;
+  /** Media ID for the new status check format */
+  mediaId?: string;
+  /** Project ID for the new status check format */
+  projectId?: string;
 };
 
 /** Options for polling a video operation until completion */
 export type PollOperationOptions = {
-  /** Operation name from the generation request */
-  operationName: string;
-  /** Scene ID (optional) */
+  /** Operation name from the generation request (legacy format) */
+  operationName?: string;
+  /** Scene ID (optional, legacy format) */
   sceneId?: string;
+  /** Media ID for the new status check format */
+  mediaId?: string;
+  /** Project ID for the new status check format */
+  projectId?: string;
   /** Maximum number of poll attempts (default: 60) */
   maxAttempts?: number;
   /** Interval between polls in ms (default: 10000) */

@@ -61,6 +61,8 @@ import type {
   GenerateImageResult,
   UploadImageOptions,
   UploadImageResult,
+  UpsampleImageOptions,
+  UpsampleImageResult,
 } from "./types/image";
 import type {
   GetProjectOptions,
@@ -256,6 +258,16 @@ export class GLabsClient {
         projectId,
       });
     },
+
+    /**
+     * Upsample (upscale) an image to a higher resolution
+     */
+    upsampleImage: async (
+      options: Omit<UpsampleImageOptions, "projectId"> & { projectId?: string }
+    ): Promise<UpsampleImageResult> => {
+      const projectId = await this.resolveProjectId(options.projectId);
+      return this.imageService.upsampleImage({ ...options, projectId });
+    },
   };
 
   // =========================================================================
@@ -408,7 +420,7 @@ export class GLabsClient {
       options: PollOperationOptions
     ): Promise<VideoStatusResult> =>
       this.vertexVideoService
-        ? this.vertexVideoService.pollOperation(options)
+        ? this.vertexVideoService.pollOperation(options as PollOperationOptions & { operationName: string })
         : this.videoService.pollOperation(options),
   };
 }

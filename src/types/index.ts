@@ -24,6 +24,7 @@ export type {
   VideoAspectRatioEnum,
   VideoGenerationType,
   VideoMode,
+  VideoResolution,
   VideoStatus,
 } from "./common";
 
@@ -36,6 +37,8 @@ export type {
   ImageReference,
   UploadImageOptions,
   UploadImageResult,
+  UpsampleImageOptions,
+  UpsampleImageResult,
 } from "./image";
 // Project types
 export type {

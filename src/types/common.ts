@@ -39,6 +39,9 @@ export type ImageAspectRatioEnum =
   | "IMAGE_ASPECT_RATIO_PORTRAIT"
   | "IMAGE_ASPECT_RATIO_SQUARE";
 
+/** Video resolution for upsampling */
+export type VideoResolution = "VIDEO_RESOLUTION_1080P" | "VIDEO_RESOLUTION_4K";
+
 /** Camera control motion types for video reshoot */
 export type ReshootMotionType =
   // Camera Control
