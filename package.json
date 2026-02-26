@@ -14,6 +14,10 @@
     "./types": {
       "import": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./openai": {
+      "import": "./dist/openai-server.js",
+      "types": "./dist/openai-server.d.ts"
     }
   },
   "files": [
@@ -29,10 +33,19 @@
     "test:e2e:video": "RUN_VIDEO_TESTS=true bun test tests/e2e/",
     "prerelease": "bun run build && bun run check-types && bun run test:e2e"
   },
+  "peerDependencies": {
+    "playwright": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "chrome-remote-interface": "^0.34.0"
   },
   "devDependencies": {
+    "@types/node": "^25.3.1",
     "dotenv": "^17.3.1",
     "tsup": "^8.5.0",
     "typescript": "^5"

@@ -21,6 +21,7 @@ import type {
   YesCaptchaGetResultResponse,
 } from "../types/recaptcha";
 import { GLabsError, sleep } from "../utils";
+import { PlaywrightRecaptchaService } from "./playwright-recaptcha.service";
 
 /** Options for the reCAPTCHA service */
 export type RecaptchaServiceOptions = {
@@ -31,6 +32,7 @@ export type RecaptchaServiceOptions = {
 /** reCAPTCHA service for obtaining tokens */
 export class RecaptchaService {
   private readonly logger: GLabsLogger;
+  private playwrightService?: PlaywrightRecaptchaService;
 
   constructor(options: RecaptchaServiceOptions = {}) {
     this.logger = options.logger ?? console;
@@ -67,6 +69,13 @@ export class RecaptchaService {
         );
       }
       return await this.getTokenFromVeo3Solver(jwtToken);
+    }
+
+    if (provider === "playwright") {
+      if (!this.playwrightService) {
+        this.playwrightService = new PlaywrightRecaptchaService({ logger: this.logger });
+      }
+      return await this.playwrightService.getToken(config.playwrightOptions, effectivePageAction);
     }
 
     if (!apiKey) {

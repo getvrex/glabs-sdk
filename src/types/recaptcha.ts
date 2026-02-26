@@ -3,7 +3,7 @@
  */
 
 /** Supported reCAPTCHA service providers */
-export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custom" | "veo3solver";
+export type RecaptchaProvider = "yescaptcha" | "capsolver" | "regotcha" | "custom" | "veo3solver" | "playwright";
 
 /** reCAPTCHA configuration */
 export type RecaptchaConfig = {
@@ -25,6 +25,28 @@ export type RecaptchaConfig = {
   jwtToken?: string;
   /** Static token to use directly (bypasses provider, useful for testing) */
   staticToken?: string;
+  /** Override the reCAPTCHA page action (e.g. for video vs image) */
+  pageAction?: string;
+  /** Playwright browser options (only for playwright provider) */
+  playwrightOptions?: PlaywrightRecaptchaOptions;
+};
+
+/** Playwright browser reCAPTCHA options */
+export type PlaywrightRecaptchaOptions = {
+  /** Run browser in headless mode (default: true) */
+  headless?: boolean;
+  /** Browser proxy configuration */
+  proxy?: {
+    server: string;
+    username?: string;
+    password?: string;
+  };
+  /** Project ID for the page URL context */
+  projectId?: string;
+  /** Maximum retry attempts per token request (default: 3) */
+  maxRetries?: number;
+  /** Timeout for script execution in ms (default: 30000) */
+  timeout?: number;
 };
 
 /** Result from reCAPTCHA token request */

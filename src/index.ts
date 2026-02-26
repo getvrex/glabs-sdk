@@ -47,10 +47,14 @@ export {
 export {
   defaultRecaptchaProvider,
   ImageService,
+  OpenAICompatService,
+  PlaywrightRecaptchaService,
   RecaptchaService,
   VertexImageService,
   VideoService,
 } from "./services";
+// OpenAI-compatible server
+export { OpenAIServer } from "./openai-server";
 // Types
 export type {
   // Common types
@@ -80,6 +84,7 @@ PollOperationOptions,
   ImageReference,
   PaygateTier,
   // reCAPTCHA types
+  PlaywrightRecaptchaOptions,
   RecaptchaConfig,
   RecaptchaProvider,
   RecaptchaTokenResult,
@@ -101,6 +106,17 @@ PollOperationOptions,
   VideoOperationResult,
   VideoStatus,
   VideoStatusResult,
+  // OpenAI-compatible types
+  DetectedGenerationType,
+  OpenAIChatCompletionChoice,
+  OpenAIChatCompletionChunk,
+  OpenAIChatCompletionRequest,
+  OpenAIChatCompletionResponse,
+  OpenAIContentPart,
+  OpenAIMessage,
+  OpenAIModel,
+  OpenAIModelList,
+  OpenAIServerConfig,
 } from "./types";
 // Error class
 export { GLabsError } from "./utils";

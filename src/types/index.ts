@@ -52,6 +52,7 @@ export type {
 export type {
   CapSolverCreateTaskResponse,
   CapSolverGetResultResponse,
+  PlaywrightRecaptchaOptions,
   RecaptchaConfig,
   RecaptchaProvider,
   RecaptchaTokenResult,
@@ -82,3 +83,16 @@ PollOperationOptions,
   VideoOperationResult,
   VideoStatusResult,
 } from "./video";
+// OpenAI-compatible types
+export type {
+  DetectedGenerationType,
+  OpenAIChatCompletionChoice,
+  OpenAIChatCompletionChunk,
+  OpenAIChatCompletionRequest,
+  OpenAIChatCompletionResponse,
+  OpenAIContentPart,
+  OpenAIMessage,
+  OpenAIModel,
+  OpenAIModelList,
+  OpenAIServerConfig,
+} from "./openai-compat";
