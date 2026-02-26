@@ -382,18 +382,6 @@ export function getVideoApiConfig(
   };
 }
 
-/** Get Vertex AI Imagen model ID from ImageModel */
-export function getVertexImageModelId(model?: ImageModel): string {
-  switch (model) {
-    case "imagen-4-fast":
-      return "imagen-4.0-fast-generate-001";
-    case "imagen-4-ultra":
-      return "imagen-4.0-ultra-generate-001";
-    default:
-      return "imagen-4.0-generate-001";
-  }
-}
-
 /** Get complete image API configuration */
 export function getImageApiConfig(
   _tier: AccountTier,

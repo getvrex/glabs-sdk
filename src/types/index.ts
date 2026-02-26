@@ -10,7 +10,6 @@ export type {
   GLabsLogger,
   ResolvedConfig,
   SessionInfo,
-  VertexAIConfig,
 } from "./client";
 // Common types
 export type {
@@ -70,7 +69,6 @@ export type {
   SupportedFeature,
   TierCapabilities,
   TierCapabilitiesRecord,
-  VertexImageApiConfig,
   VideoApiConfig,
   VideoModelMapping,
 } from "./tier";

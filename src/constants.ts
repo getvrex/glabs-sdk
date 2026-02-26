@@ -33,15 +33,6 @@ export const ENDPOINTS = {
   // Project endpoints (tRPC)
   SEARCH_USER_PROJECTS: `${GLABS_FX_API_BASE}/project.searchUserProjects`,
   GET_PROJECT: `${GLABS_FX_API_BASE}/project.getProject`,
-  // Vertex AI image generation
-  VERTEX_IMAGE_GENERATE: (projectId: string, location: string, modelId: string) =>
-    `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predict`,
-  // Vertex AI video generation (long-running)
-  VERTEX_VIDEO_GENERATE: (projectId: string, location: string, modelId: string) =>
-    `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predictLongRunning`,
-  // Vertex AI operation polling (POST fetchPredictOperation)
-  VERTEX_FETCH_PREDICT_OPERATION: (projectId: string, location: string, modelId: string) =>
-    `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:fetchPredictOperation`,
 } as const;
 
 /** reCAPTCHA service URLs */

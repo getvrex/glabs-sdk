@@ -46,8 +46,6 @@ import {
   ProjectService,
   RecaptchaService,
   TokenManager,
-  VertexImageService,
-  VertexVideoService,
   VideoService,
 } from "./services";
 import type {
@@ -102,8 +100,6 @@ export class GLabsClient {
   private readonly tokenManager: TokenManager;
   private readonly recaptchaService: RecaptchaService;
   private readonly imageService: ImageService;
-  private readonly vertexImageService?: VertexImageService;
-  private readonly vertexVideoService?: VertexVideoService;
   private readonly videoService: VideoService;
   private readonly projectService: ProjectService;
 
@@ -120,14 +116,6 @@ export class GLabsClient {
       config: this.config,
       recaptchaService: this.recaptchaService,
     });
-    if (this.config.vertexAI) {
-      this.vertexImageService = new VertexImageService({
-        config: this.config,
-      });
-      this.vertexVideoService = new VertexVideoService({
-        config: this.config,
-      });
-    }
     this.videoService = new VideoService({
       config: this.config,
       recaptchaService: this.recaptchaService,
@@ -147,7 +135,6 @@ export class GLabsClient {
       accountTier: config.accountTier ?? "pro",
       projectId: config.projectId,
       recaptcha: config.recaptcha,
-      vertexAI: config.vertexAI,
       logger: config.logger ?? defaultLogger,
       timeout: config.timeout ?? DEFAULTS.TIMEOUT,
       maxRetries: config.maxRetries ?? DEFAULTS.MAX_RETRIES,
@@ -284,19 +271,11 @@ export class GLabsClient {
 
     /**
      * Generate images from a prompt
-     * Uses Vertex AI Imagen when vertexAI config is present, otherwise uses GLabs API.
      * If no projectId provided, auto-selects first available project.
      */
     generate: async (
       options: Omit<GenerateImageOptions, "projectId"> & { projectId?: string }
     ): Promise<GenerateImageResult> => {
-      if (this.vertexImageService) {
-        const projectId = options.projectId ?? this.config.projectId ?? "";
-        return this.vertexImageService.generateImage({
-          ...options,
-          projectId,
-        });
-      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.withTokenRefresh(() =>
         this.imageService.generateImage({ ...options, projectId })
@@ -326,7 +305,6 @@ export class GLabsClient {
   readonly videos = {
     /**
      * Generate video from text prompt
-     * Uses Vertex AI Veo when vertexAI config is present, otherwise uses GLabs API.
      * If no projectId provided, auto-selects first available project.
      */
     generateTextToVideo: async (
@@ -335,12 +313,6 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      if (this.vertexVideoService) {
-        return this.vertexVideoService.generateTextToVideo({
-          prompt: options.prompt,
-          aspectRatio: options.aspectRatio,
-        });
-      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.withTokenRefresh(() =>
         this.videoService.generateTextToVideo({
@@ -353,7 +325,6 @@ export class GLabsClient {
 
     /**
      * Generate video from image (first frame or first+last frame)
-     * Uses Vertex AI Veo when vertexAI config is present, otherwise uses GLabs API.
      * If no projectId provided, auto-selects first available project.
      */
     generateImageToVideo: async (
@@ -365,16 +336,6 @@ export class GLabsClient {
         accountTier?: AccountTier;
       }
     ): Promise<VideoOperationResult> => {
-      if (this.vertexVideoService) {
-        return this.vertexVideoService.generateImageToVideo({
-          prompt: options.prompt,
-          image: { bytesBase64Encoded: options.imageBase64 || options.startMediaId },
-          lastFrame: (options.imageBase64End || options.endMediaId)
-            ? { bytesBase64Encoded: options.imageBase64End || options.endMediaId }
-            : undefined,
-          aspectRatio: options.aspectRatio,
-        });
-      }
       const projectId = await this.resolveProjectId(options.projectId);
       return this.withTokenRefresh(() =>
         this.videoService.generateImageToVideo({
@@ -473,15 +434,12 @@ export class GLabsClient {
 
     /**
      * Poll a video operation until completion, failure, or timeout
-     * Routes to Vertex AI when vertexAI config is present.
      */
     pollOperation: (
       options: PollOperationOptions
     ): Promise<VideoStatusResult> =>
       this.withTokenRefresh(() =>
-        this.vertexVideoService
-          ? this.vertexVideoService.pollOperation(options as PollOperationOptions & { operationName: string })
-          : this.videoService.pollOperation(options)
+        this.videoService.pollOperation(options)
       ),
   };
 }

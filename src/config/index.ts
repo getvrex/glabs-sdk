@@ -8,7 +8,6 @@ export {
   getImageAspectRatioEnum,
   getPaygateTier,
   getTierCapabilities,
-  getVertexImageModelId,
   getVideoApiConfig,
   getVideoAspectRatioEnum,
   getVideoModelKey,

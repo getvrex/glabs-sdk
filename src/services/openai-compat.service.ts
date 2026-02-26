@@ -243,8 +243,7 @@ export class OpenAICompatService {
       );
     }
 
-    // Upload the image first to get a startMediaId for the GLabs path.
-    // The imageBase64 field is also passed for the Vertex AI path.
+    // Upload the image first to get a startMediaId
     const uploadResult = await this.client.images.upload({
       imageBase64: base64,
       sessionId,
@@ -255,7 +254,6 @@ export class OpenAICompatService {
     const operation = await this.client.videos.generateImageToVideo({
       prompt,
       startMediaId,
-      imageBase64: base64,
       sessionId,
       aspectRatio,
     });
