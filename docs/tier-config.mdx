@@ -1,213 +1,190 @@
 ---
 title: Tier Configuration
-description: Understanding Pro and Ultra tier differences
+description: Account tier utilities and model selection
 ---
 
 # Tier Configuration
 
-The SDK provides utilities for managing account tier differences in video and image generation.
+The SDK provides utility functions for working with Pro and Ultra account tiers. These are used internally but exported for advanced use cases.
 
-## Account Tiers
-
-Google Labs offers two subscription tiers:
-
-| Feature | Pro | Ultra |
-|---------|-----|-------|
-| Video Modes | quality, fast | quality, fast |
-| Default Video Mode | fast | quality |
-| PaygateTier | PAYGATE_TIER_TWO | PAYGATE_TIER_TWO |
-| HD Upscaling | Yes | Yes |
-| Quality Mode | Yes | Yes |
-| Max Images/Batch | 4 | 4 |
-
-## Tier Utilities
-
-Import tier configuration utilities:
+## Tier Capabilities
 
 ```typescript
-import {
-  getTierCapabilities,
-  getEffectiveVideoMode,
-  getVideoApiConfig,
-  getImageApiConfig,
-  isFeatureSupported,
-} from '@getvrex/glabs-sdk';
-```
+import { getTierCapabilities } from '@getvrex/glabs-sdk';
 
-### Get Tier Capabilities
-
-```typescript
 const capabilities = getTierCapabilities('pro');
+// {
+//   supportedVideoModes: ['quality', 'fast'],
+//   defaultVideoMode: 'fast',
+//   paygateTier: 'PAYGATE_TIER_ONE',
+//   supportsUpsample: true,
+//   supportsQualityMode: true,
+//   maxImageGenerationCount: 4,
+// }
 
-console.log(capabilities.supportedVideoModes);  // ['quality', 'fast']
-console.log(capabilities.defaultVideoMode);     // 'fast'
-console.log(capabilities.paygateTier);          // 'PAYGATE_TIER_TWO'
-console.log(capabilities.supportsUpsample);     // true
-console.log(capabilities.supportsQualityMode);  // true
-console.log(capabilities.maxImageGenerationCount); // 4
+const ultraCaps = getTierCapabilities('ultra');
+// {
+//   supportedVideoModes: ['quality', 'fast'],
+//   defaultVideoMode: 'quality',
+//   paygateTier: 'PAYGATE_TIER_TWO',
+//   supportsUpsample: true,
+//   supportsQualityMode: true,
+//   maxImageGenerationCount: 4,
+// }
 ```
 
-### Get Effective Video Mode
+## Video API Config
 
-Returns the actual mode that will be used based on tier restrictions:
+Get complete API configuration for a video generation request:
 
 ```typescript
-// Pro account requesting quality mode
-const mode = getEffectiveVideoMode('pro', 'quality');
-// Returns: 'quality' (supported)
+import { getVideoApiConfig } from '@getvrex/glabs-sdk';
 
-// Pro account with no mode specified
-const defaultMode = getEffectiveVideoMode('pro');
-// Returns: 'fast' (tier default)
+const config = getVideoApiConfig('text-to-video', 'pro', '16:9', 'fast');
+// {
+//   videoModelKey: 'veo_3_1_t2v_fast',
+//   userPaygateTier: 'PAYGATE_TIER_ONE',
+//   effectiveVideoMode: 'fast',
+//   aspectRatioEnum: 'VIDEO_ASPECT_RATIO_LANDSCAPE',
+// }
 ```
 
-### Get Video API Config
-
-Get all configuration needed for a video API request:
+### Video Generation Types
 
 ```typescript
-const config = getVideoApiConfig(
-  'text-to-video',  // Generation type
-  'pro',            // Account tier
-  '16:9',           // Aspect ratio
-  'fast'            // Video mode
-);
-
-console.log(config.videoModelKey);      // 'veo_3_1_t2v_fast_ultra'
-console.log(config.userPaygateTier);    // 'PAYGATE_TIER_TWO'
-console.log(config.effectiveVideoMode); // 'fast'
-console.log(config.aspectRatioEnum);    // 'VIDEO_ASPECT_RATIO_LANDSCAPE'
+type VideoGenerationType =
+  | 'text-to-video'
+  | 'image-to-video'
+  | 'image-to-video-fl'
+  | 'extend'
+  | 'reshoot'
+  | 'upsample'
+  | 'reference-images';
 ```
 
-### Get Image API Config
+## Video Model Key
+
+Get the internal model key for a specific generation type:
 
 ```typescript
-const config = getImageApiConfig(
-  'pro',           // Account tier
-  '16:9',          // Aspect ratio
-  'nanobanana'     // Model
-);
+import { getVideoModelKey } from '@getvrex/glabs-sdk';
 
-console.log(config.imageModelName);  // 'GEM_PIX'
-console.log(config.aspectRatioEnum); // 'IMAGE_ASPECT_RATIO_LANDSCAPE'
+getVideoModelKey('text-to-video', 'pro', '16:9', 'fast');
+// 'veo_3_1_t2v_fast'
+
+getVideoModelKey('text-to-video', 'ultra', '16:9', 'fast');
+// 'veo_3_1_t2v_fast_ultra'
+
+getVideoModelKey('text-to-video', 'pro', '9:16', 'quality');
+// 'veo_3_1_t2v_portrait'
+
+getVideoModelKey('reshoot', 'pro', '16:9');
+// 'veo_3_0_reshoot_landscape'
+
+getVideoModelKey('upsample', 'pro', '16:9');
+// 'veo_3_1_upsampler_4k'
 ```
 
-### Check Feature Support
+### Model Naming Pattern
+
+| Tier | Mode | Model Suffix |
+|------|------|-------------|
+| Pro | fast | `_fast` |
+| Pro | quality | (base) |
+| Ultra | fast | `_fast_ultra` |
+| Ultra | quality | (base, same as Pro) |
+
+Portrait aspect ratios add `_portrait`. Square uses the landscape model.
+
+## Effective Video Mode
+
+Get the actual mode after applying tier restrictions:
 
 ```typescript
-// Check if HD upscaling is supported
-const upsampleSupport = isFeatureSupported('upsample', 'pro', '16:9');
-console.log(upsampleSupport.supported); // true
+import { getEffectiveVideoMode } from '@getvrex/glabs-sdk';
 
-// HD upscaling only works with 16:9
-const portraitUpsample = isFeatureSupported('upsample', 'pro', '9:16');
-console.log(portraitUpsample.supported); // false
-console.log(portraitUpsample.reason);    // 'HD upscaling only supports 16:9 landscape videos'
-
-// Check quality mode support
-const qualitySupport = isFeatureSupported('quality_mode', 'pro');
-console.log(qualitySupport.supported); // true
+getEffectiveVideoMode('pro');          // 'fast' (default for pro)
+getEffectiveVideoMode('ultra');        // 'quality' (default for ultra)
+getEffectiveVideoMode('pro', 'quality'); // 'quality'
+getEffectiveVideoMode('ultra', 'fast');  // 'fast'
 ```
 
-## Video Generation Types
+## Image API Config
 
-| Type | Description |
-|------|-------------|
-| `text-to-video` | Generate from text prompt |
-| `image-to-video` | Generate from first frame image |
-| `image-to-video-fl` | Generate from first and last frame images |
-| `extend` | Extend existing video |
-| `reshoot` | Camera control reshoot |
-| `upsample` | HD upscaling (1080p) |
-| `reference-images` | Multi-image reference video |
+```typescript
+import { getImageApiConfig } from '@getvrex/glabs-sdk';
 
-## Video Model Keys
+getImageApiConfig('pro', '16:9');
+// { imageModelName: 'GEM_PIX', aspectRatioEnum: 'IMAGE_ASPECT_RATIO_LANDSCAPE' }
 
-The SDK automatically selects the correct model based on generation type, tier, mode, and aspect ratio.
+getImageApiConfig('pro', '16:9', 'nanobananapro');
+// { imageModelName: 'GEM_PIX_2', aspectRatioEnum: 'IMAGE_ASPECT_RATIO_LANDSCAPE' }
+```
 
-### Text-to-Video Models
+## Feature Support Check
 
-| Tier | Mode | Model Key |
-|------|------|-----------|
-| Pro/Ultra | fast | `veo_3_1_t2v_fast_ultra` |
-| Pro/Ultra | quality | `veo_3_1_t2v` |
+Check if a feature is supported for a tier:
 
-### Image-to-Video Models
+```typescript
+import { isFeatureSupported } from '@getvrex/glabs-sdk';
 
-| Tier | Mode | Aspect | Model Key |
-|------|------|--------|-----------|
-| Pro/Ultra | fast | 16:9, 1:1 | `veo_3_1_i2v_s_fast_ultra` |
-| Pro/Ultra | fast | 9:16 | `veo_3_1_i2v_s_fast_portrait_ultra` |
-| Pro/Ultra | quality | 16:9, 1:1 | `veo_3_1_i2v_s` |
-| Pro/Ultra | quality | 9:16 | `veo_3_1_i2v_s_portrait` |
+isFeatureSupported('upsample', 'pro');
+// { supported: true }
 
-### Camera Control Models
+isFeatureSupported('upsample', 'pro', '9:16');
+// { supported: false, reason: 'HD upscaling only supports 16:9 landscape videos' }
 
-| Aspect | Model Key |
-|--------|-----------|
-| 16:9 | `veo_3_0_reshoot_landscape` |
-| 9:16 | `veo_3_0_reshoot_portrait` |
-| 1:1 | `veo_3_0_reshoot_square` |
+isFeatureSupported('quality_mode', 'pro');
+// { supported: true }
 
-### Reference Images Models
+isFeatureSupported('extend', 'pro');
+// { supported: true }
+```
 
-| Tier | Model Key |
-|------|-----------|
-| Pro | `veo_3_0_r2v_fast` |
-| Ultra | `veo_3_0_r2v_fast_ultra` |
+### Supported Features
 
-### Upscale Model
-
-All tiers use `veo_2_1080p_upsampler_8s` for HD upscaling.
+```typescript
+type SupportedFeature =
+  | 'upsample'
+  | 'quality_mode'
+  | 'extend'
+  | 'reshoot'
+  | 'reference_images';
+```
 
 ## Aspect Ratio Enums
 
-### Video Aspect Ratios
-
-| Ratio | Enum Value |
-|-------|------------|
-| 16:9 | `VIDEO_ASPECT_RATIO_LANDSCAPE` |
-| 9:16 | `VIDEO_ASPECT_RATIO_PORTRAIT` |
-| 1:1 | `VIDEO_ASPECT_RATIO_SQUARE` |
-
-### Image Aspect Ratios
-
-| Ratio | Enum Value |
-|-------|------------|
-| 16:9 | `IMAGE_ASPECT_RATIO_LANDSCAPE` |
-| 9:16 | `IMAGE_ASPECT_RATIO_PORTRAIT` |
-| 1:1 | `IMAGE_ASPECT_RATIO_SQUARE` |
-
-## Utility Functions
-
-### getVideoAspectRatioEnum
-
 ```typescript
-import { getVideoAspectRatioEnum } from '@getvrex/glabs-sdk';
+import { getVideoAspectRatioEnum, getImageAspectRatioEnum } from '@getvrex/glabs-sdk';
 
 getVideoAspectRatioEnum('16:9'); // 'VIDEO_ASPECT_RATIO_LANDSCAPE'
 getVideoAspectRatioEnum('9:16'); // 'VIDEO_ASPECT_RATIO_PORTRAIT'
 getVideoAspectRatioEnum('1:1');  // 'VIDEO_ASPECT_RATIO_SQUARE'
-```
-
-### getImageAspectRatioEnum
-
-```typescript
-import { getImageAspectRatioEnum } from '@getvrex/glabs-sdk';
 
 getImageAspectRatioEnum('16:9'); // 'IMAGE_ASPECT_RATIO_LANDSCAPE'
 getImageAspectRatioEnum('9:16'); // 'IMAGE_ASPECT_RATIO_PORTRAIT'
 getImageAspectRatioEnum('1:1');  // 'IMAGE_ASPECT_RATIO_SQUARE'
 ```
 
-### getVideoModelKey
+## PaygateTier
 
 ```typescript
-import { getVideoModelKey } from '@getvrex/glabs-sdk';
+import { getPaygateTier } from '@getvrex/glabs-sdk';
 
-getVideoModelKey('text-to-video', 'pro', '16:9', 'fast');
-// Returns: 'veo_3_1_t2v_fast_ultra'
-
-getVideoModelKey('image-to-video-fl', 'ultra', '9:16', 'quality');
-// Returns: 'veo_3_1_i2v_s_portrait_fl'
+getPaygateTier('pro');   // 'PAYGATE_TIER_ONE'
+getPaygateTier('ultra'); // 'PAYGATE_TIER_TWO'
 ```
+
+## All Exported Functions
+
+| Function | Description |
+|----------|-------------|
+| `getTierCapabilities(tier)` | Get tier capabilities object |
+| `getEffectiveVideoMode(tier, mode?)` | Get effective video mode |
+| `getPaygateTier(tier)` | Get PaygateTier enum value |
+| `getVideoAspectRatioEnum(ratio)` | Convert aspect ratio to video enum |
+| `getImageAspectRatioEnum(ratio)` | Convert aspect ratio to image enum |
+| `getVideoModelKey(type, tier, ratio, mode?)` | Get video model key |
+| `getVideoApiConfig(type, tier, ratio, mode?)` | Get full video API config |
+| `getImageApiConfig(tier, ratio, model?)` | Get full image API config |
+| `isFeatureSupported(feature, tier, ratio?)` | Check feature support |

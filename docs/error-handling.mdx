@@ -1,0 +1,160 @@
+---
+title: Error Handling
+description: Handle SDK errors and API failures
+---
+
+# Error Handling
+
+All SDK errors are thrown as `GLabsError` instances with structured error codes.
+
+## GLabsError
+
+```typescript
+import { GLabsError } from '@getvrex/glabs-sdk';
+
+try {
+  await client.images.generate({ ... });
+} catch (error) {
+  if (error instanceof GLabsError) {
+    console.error('Message:', error.message);
+    console.error('Code:', error.code);
+    console.error('HTTP Status:', error.statusCode);
+    console.error('Cause:', error.cause);
+
+    // JSON serializable
+    console.error(JSON.stringify(error));
+    // { "name": "GLabsError", "message": "...", "code": "...", "statusCode": 403 }
+  }
+}
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `message` | `string` | Human-readable error message |
+| `code` | `string` | Machine-readable error code |
+| `statusCode` | `number \| undefined` | HTTP status code (if from API) |
+| `cause` | `unknown` | Original error (if wrapping) |
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `NETWORK_ERROR` | Fetch failed, timeout, connection refused |
+| `HIGH_TRAFFIC` | Google Labs is rate limiting |
+| `INTERNAL_ERROR` | Google API internal error (500) |
+| `INVALID_ARGUMENT` | Bad request / content policy violation (400) |
+| `PERMISSION_DENIED` | Authentication failed (403) |
+| `RECAPTCHA_REQUIRED` | No reCAPTCHA config provided |
+| `TIMEOUT` | Request timed out |
+| `UNKNOWN` | Unclassified error |
+| `AUTH_ERROR` | Token refresh failed |
+| `WHISK_AUTH_ERROR` | Whisk authentication failed |
+| `WHISK_API_ERROR` | Whisk API error |
+| `WHISK_VALIDATION_ERROR` | Whisk input validation failed |
+
+## Common Error Scenarios
+
+### High Traffic
+
+```typescript
+try {
+  await client.videos.generateTextToVideo({ ... });
+} catch (error) {
+  if (error instanceof GLabsError && error.code === 'HIGH_TRAFFIC') {
+    // Google Labs is busy, wait and retry
+    await new Promise(r => setTimeout(r, 30000));
+    // retry...
+  }
+}
+```
+
+### Content Policy Violation
+
+```typescript
+try {
+  await client.images.generate({ ... });
+} catch (error) {
+  if (error instanceof GLabsError && error.code === 'INVALID_ARGUMENT') {
+    console.error('Prompt violates content policy, modify and retry');
+  }
+}
+```
+
+### Authentication Failure
+
+```typescript
+try {
+  await client.images.generate({ ... });
+} catch (error) {
+  if (error instanceof GLabsError && error.statusCode === 401) {
+    // Token expired and auto-refresh failed (or no sessionToken)
+    // Get a new bearer token
+  }
+}
+```
+
+### reCAPTCHA Errors
+
+```typescript
+try {
+  await client.images.generate({ ... });
+} catch (error) {
+  if (error instanceof GLabsError) {
+    switch (error.code) {
+      case 'RECAPTCHA_REQUIRED':
+        // No reCAPTCHA config — add recaptcha to client config
+        break;
+      case 'PERMISSION_DENIED':
+        // Token evaluation failed after all retries
+        break;
+    }
+  }
+}
+```
+
+### Video Generation Failure
+
+```typescript
+const result = await client.videos.pollOperation({
+  operationName: operation.operationName,
+});
+
+if (result.error) {
+  console.error('Video generation failed:', result.error);
+  // Common errors:
+  // - "Service busy, please try again later" (high traffic)
+  // - "Prompt or image content violates policy" (content violation)
+  // - "Video generation failed, please try again later" (internal error)
+}
+```
+
+## Automatic Retries
+
+The SDK automatically retries on network errors:
+
+- Connection refused, DNS resolution, fetch failures
+- Configurable via `maxRetries` (default: 2) and `retryDelay` (default: 1500ms)
+- Uses exponential backoff between retries
+
+reCAPTCHA token evaluation failures are also automatically retried (up to 20 attempts) with fresh tokens.
+
+## Network Error Detection
+
+The SDK classifies these as retryable network errors:
+
+- `TypeError` / `AbortError`
+- Messages containing: fetch, network, timeout, econnrefused, etimedout, enotfound, failed to fetch
+
+## Utility Functions (Advanced)
+
+```typescript
+import { GLabsError } from '@getvrex/glabs-sdk';
+
+// These are used internally but available for advanced use:
+// - isNetworkError(error) — check if error is retryable
+// - parseGoogleApiError(data, statusCode) — parse API error response
+// - isRecaptchaRequired(statusCode, data) — check if 403 is reCAPTCHA
+// - isRecaptchaEvaluationFailed(statusCode, data) — check if token was rejected
+```

@@ -1,0 +1,123 @@
+---
+title: Project Management
+description: Manage Google Labs projects for media generation
+---
+
+# Project Management
+
+Google Labs requires a project ID for image generation. The SDK provides a `projects` namespace for managing projects and automatic project resolution.
+
+## Auto-Resolution
+
+By default, you don't need to specify a `projectId`. The SDK will automatically:
+
+1. Use `projectId` from the method call (if provided)
+2. Fall back to `projectId` from client config
+3. Fetch and cache the first available project from your account
+
+```typescript
+// No projectId needed — auto-resolved
+const result = await client.images.generate({
+  prompt: 'A sunset',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+**Note:** Auto-resolution requires `sessionToken` to be configured, since it calls the Project API.
+
+## List Projects
+
+```typescript
+const { projects, nextCursor } = await client.projects.list({
+  pageSize: 20,    // optional, default: 20
+  cursor: undefined, // optional, for pagination
+});
+
+for (const project of projects) {
+  console.log(`${project.projectId}: ${project.projectInfo.projectTitle}`);
+  console.log(`  Created: ${project.creationTime}`);
+  console.log(`  Scenes: ${project.scenes?.length ?? 0}`);
+}
+
+// Paginate
+if (nextCursor) {
+  const nextPage = await client.projects.list({ cursor: nextCursor });
+}
+```
+
+## Get Project
+
+```typescript
+const project = await client.projects.get({
+  projectId: 'your-project-id',
+});
+
+console.log(project.projectId);
+console.log(project.projectInfo.projectTitle);
+```
+
+## Get First Project ID
+
+Returns the first available project ID (cached after first call):
+
+```typescript
+const projectId = await client.projects.getFirstProjectId();
+console.log('First project:', projectId);
+```
+
+## Clear Cache
+
+Clear the cached first project ID:
+
+```typescript
+client.projects.clearCache();
+```
+
+## Types
+
+```typescript
+type Project = {
+  projectId: string;
+  projectInfo: ProjectInfo;
+  creationTime: string;
+  scenes?: ProjectScene[];
+};
+
+type ProjectInfo = {
+  projectTitle: string;
+  thumbnailMediaKey?: string;
+};
+
+type ProjectScene = {
+  sceneId: string;
+  sceneName: string;
+  clips?: ProjectClip[];
+  createTime: string;
+};
+
+type ProjectClip = {
+  clipId: string;
+  startTime: string;
+  endTime: string;
+};
+
+type ListProjectsOptions = {
+  pageSize?: number;  // default: 20
+  cursor?: string;    // pagination cursor
+};
+
+type ListProjectsResult = {
+  projects: Project[];
+  nextCursor?: string;
+};
+
+type GetProjectOptions = {
+  projectId: string;
+};
+
+type GetProjectResult = {
+  projectId: string;
+  projectInfo: ProjectInfo;
+};
+```

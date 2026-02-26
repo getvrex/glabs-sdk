@@ -1,18 +1,18 @@
 ---
 title: reCAPTCHA Configuration
-description: Configure reCAPTCHA providers for video generation
+description: Configure reCAPTCHA providers for image and video generation
 ---
 
 # reCAPTCHA Configuration
 
-Both image and video generation require reCAPTCHA verification. The SDK supports five providers.
+All image and video generation requires reCAPTCHA verification. The SDK supports 7 providers with automatic retry and fallback chains.
 
 **Recommended providers:**
-- **Regotcha** - Best success rate for Google Labs, affordable pricing
-- **CapSolver** - High reliability with proxy support and browser fingerprinting
+- **Chrome** (default) — Real Chrome browser, persistent context, highest success rate
+- **YesCaptcha** — Reliable cloud-based solving service
 
 **Other providers:**
-- YesCaptcha, Veo3Solver, Custom (self-hosted)
+- Playwright, Regotcha, CapSolver, Veo3Solver, Custom (self-hosted)
 
 ## Why reCAPTCHA?
 
@@ -20,56 +20,44 @@ Google Labs uses reCAPTCHA v3 Enterprise to protect against abuse. The SDK handl
 
 1. All generation requests require a reCAPTCHA token
 2. SDK automatically fetches a token before each request
-3. If token evaluation fails, SDK retries with a new token (up to 3 attempts)
+3. If token evaluation fails, SDK retries with a new token (up to 20 attempts)
 
 ## Supported Providers
 
-### Regotcha (Recommended)
+### Chrome (Recommended)
 
-[Regotcha](https://regotcha.com) offers the best success rate for Google Labs reCAPTCHA v3 Enterprise at competitive pricing.
-
-```typescript
-const client = new GLabsClient({
-  bearerToken: 'your-token',
-  recaptcha: {
-    provider: 'regotcha',
-    apiKey: 'your-regotcha-api-key',
-    maxRetries: 30, // Optional: max polling attempts (default: 30)
-  },
-});
-```
-
-**Why Regotcha?**
-- Optimized for Google Labs reCAPTCHA v3 Enterprise
-- Fast token generation (typically 5-15s)
-- Affordable pricing
-- Simple API with high reliability
-
-### CapSolver (Recommended)
-
-[CapSolver](https://capsolver.com) provides high reliability with advanced features like proxy support and browser fingerprinting.
+Uses a real Chrome browser with persistent context via Chrome DevTools Protocol. Achieves the highest reCAPTCHA scores by maintaining a real browser session.
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'your-token',
   recaptcha: {
-    provider: 'capsolver',
-    apiKey: 'your-capsolver-api-key',
-    proxy: 'http://user:pass@ip:port', // Optional: residential proxy
-    maxRetries: 30, // Optional: max polling attempts (default: 30)
+    provider: 'chrome',
+    chromeOptions: {
+      headless: false,     // headed mode = higher scores (default: false)
+      projectId: 'your-project-id', // for page URL context
+      maxRetries: 3,       // retries per token request (default: 3)
+      timeout: 30000,      // page/script timeout ms (default: 30000)
+      userDataDir: '~/.glabs-sdk/chrome-profile', // persistent profile path
+      proxy: {             // optional proxy
+        server: 'http://proxy:8080',
+        username: 'user',
+        password: 'pass',
+      },
+    },
   },
 });
 ```
 
-**Why CapSolver?**
-- Supports residential proxy for improved success rates
-- Provides browser fingerprint data (userAgent, secChUa)
-- Established service with good documentation
-- Suitable for high-volume usage
+**Why Chrome?**
+- Persistent browser context — maintains cookies and session across requests
+- Real Chrome fingerprint — highest reCAPTCHA v3 scores
+- No external API dependency — runs locally
+- Auto-cleanup via `client.close()`
 
-### YesCaptcha
+### YesCaptcha (Recommended)
 
-[YesCaptcha](https://yescaptcha.com) is a captcha solving service.
+[YesCaptcha](https://yescaptcha.com) is a reliable cloud-based captcha solving service.
 
 ```typescript
 const client = new GLabsClient({
@@ -77,14 +65,78 @@ const client = new GLabsClient({
   recaptcha: {
     provider: 'yescaptcha',
     apiKey: 'your-yescaptcha-client-key',
-    maxRetries: 20, // Optional: max polling attempts (default: 20)
+    maxRetries: 20, // max polling attempts (default: 20)
   },
 });
 ```
 
+**Why YesCaptcha?**
+- No local browser required
+- Consistent success rates
+- Simple setup
+
+### Playwright
+
+Uses a Playwright-managed browser to generate reCAPTCHA tokens locally.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'playwright',
+    playwrightOptions: {
+      headless: false,     // headed = higher scores (default: false)
+      projectId: 'your-project-id',
+      maxRetries: 3,
+      timeout: 30000,
+      proxy: {
+        server: 'http://proxy:8080',
+        username: 'user',
+        password: 'pass',
+      },
+    },
+  },
+});
+```
+
+**Note:** Requires `playwright` as a peer dependency: `npm install playwright`
+
+### Regotcha
+
+[Regotcha](https://regotcha.com) is optimized for Google Labs reCAPTCHA v3 Enterprise.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'regotcha',
+    apiKey: 'your-regotcha-api-key',
+    maxRetries: 30,
+  },
+});
+```
+
+### CapSolver
+
+[CapSolver](https://capsolver.com) provides proxy support and browser fingerprinting.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'capsolver',
+    apiKey: 'your-capsolver-api-key',
+    proxy: 'http://user:pass@ip:port', // optional residential proxy
+    maxRetries: 30,
+  },
+});
+```
+
+CapSolver returns additional browser fingerprint data (`userAgent`, `secChUa`) that the SDK automatically includes in requests.
+
 ### Veo3Solver
 
-Veo3Solver is a token service that provides pre-solved reCAPTCHA tokens via JWT authentication.
+Token service that provides pre-solved reCAPTCHA tokens via JWT authentication.
 
 ```typescript
 const client = new GLabsClient({
@@ -96,26 +148,7 @@ const client = new GLabsClient({
 });
 ```
 
-No polling required - tokens are returned immediately via a simple GET request.
-
-### Static Token (Testing)
-
-For testing captcha services or debugging, you can pass a token directly without using any provider.
-
-```typescript
-const client = new GLabsClient({
-  bearerToken: 'your-token',
-  recaptcha: {
-    provider: 'regotcha', // Provider is required but ignored when staticToken is set
-    staticToken: 'your-pre-obtained-token',
-  },
-});
-```
-
-This bypasses all provider logic and uses the provided token directly. Useful for:
-- Testing captcha provider tokens manually
-- Debugging API responses without waiting for token generation
-- Integration testing with known-good tokens
+No polling required — tokens are returned immediately.
 
 ### Custom Solver
 
@@ -127,215 +160,154 @@ const client = new GLabsClient({
   recaptcha: {
     provider: 'custom',
     customEndpoint: 'http://localhost:8000/solve',
-    proxy: 'http://user:pass@host:port', // Optional
-    anchor: 'PCFET0NUWVBFIEhUTUw...', // Optional
-    reload: 'CiAgICAgICAgICAgIGZldGNo...', // Optional
+    proxy: 'http://user:pass@host:port',
+    anchor: 'base64-encoded-anchor',
+    reload: 'base64-encoded-reload',
   },
 });
 ```
 
-**Custom Solver API Specification:**
+**Custom Solver API:**
 
-Your custom solver endpoint must implement a POST endpoint that accepts:
-
+Request (POST):
 ```json
 {
   "websiteURL": "https://labs.google",
   "websiteKey": "6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV",
-  "pageAction": "FLOW_GENERATION",
-  "anchor": "...",     // Optional, base64 encoded
-  "reload": "...",     // Optional, base64 encoded
-  "proxy": "http://user:pass@host:port"  // Optional
+  "pageAction": "IMAGE_GENERATION",
+  "anchor": "...",
+  "reload": "...",
+  "proxy": "http://user:pass@host:port"
 }
 ```
 
-And returns:
-
+Response:
 ```json
-{
-  "success": true,
-  "token": "03AFcWeA..."
-}
+{ "success": true, "token": "03AFcWeA..." }
 ```
 
-On error:
+### Static Token (Testing)
 
-```json
-{
-  "success": false,
-  "error": "Error message"
-}
-```
-
-## Configuration Options
-
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `provider` | `'yescaptcha' \| 'capsolver' \| 'regotcha' \| 'veo3solver' \| 'custom'` | Yes | The captcha solving service to use |
-| `apiKey` | `string` | Yes* | API key for the provider (*not required for custom/veo3solver) |
-| `jwtToken` | `string` | No** | JWT token for authentication (**required for veo3solver) |
-| `customEndpoint` | `string` | No*** | Custom solver endpoint URL (***required for custom provider) |
-| `staticToken` | `string` | No | Static token to use directly (bypasses provider, useful for testing) |
-| `proxy` | `string` | No | Proxy URL (CapSolver and Custom only) |
-| `anchor` | `string` | No | Anchor parameter (Custom only) |
-| `reload` | `string` | No | Reload parameter (Custom only) |
-| `maxRetries` | `number` | No | Maximum polling attempts |
-
-## How It Works
-
-### Token Request Flow
-
-1. SDK creates a task with the provider
-2. Provider solves the reCAPTCHA challenge
-3. SDK polls for the result
-4. Token is included in API requests
-
-### YesCaptcha Flow
-
-```
-SDK -> YesCaptcha: createTask (RecaptchaV3TaskProxylessM1S7)
-YesCaptcha -> SDK: taskId
-SDK -> YesCaptcha: getTaskResult (polling every 3s)
-YesCaptcha -> SDK: { gRecaptchaResponse: "token" }
-```
-
-### CapSolver Flow
-
-```
-SDK -> CapSolver: createTask (ReCaptchaV3EnterpriseTask)
-CapSolver -> SDK: taskId
-SDK -> CapSolver: getTaskResult (polling every 2s)
-CapSolver -> SDK: { gRecaptchaResponse: "token", userAgent, secChUa }
-```
-
-### Regotcha Flow
-
-```
-SDK -> Regotcha: createTask (ReCaptchaV3EnterpriseTaskProxyLess)
-Regotcha -> SDK: taskId
-SDK -> Regotcha: getTaskResult (polling every 2s)
-Regotcha -> SDK: { gRecaptchaResponse: "token" }
-```
-
-### Veo3Solver Flow
-
-```
-SDK -> Veo3Solver: GET /api/fix/get-token (Authorization: Bearer jwt)
-Veo3Solver -> SDK: { success: true, token: "...", age: 5, countTokens: 100 }
-```
-
-No polling required - tokens are returned immediately.
-
-### Custom Solver Flow
-
-```
-SDK -> Custom: POST /solve { websiteURL, websiteKey, pageAction, ... }
-Custom -> SDK: { success: true, token: "..." }
-```
-
-The custom solver handles the entire solving process synchronously. No polling is required.
-
-## Browser Fingerprint
-
-CapSolver provides additional browser fingerprint data:
-
-- `userAgent`: Browser user agent string
-- `secChUa`: Sec-CH-UA header value
-
-The SDK automatically includes these headers in requests when available, improving success rates.
-
-## Using Proxies (CapSolver)
-
-For better success rates, CapSolver supports residential proxies:
+Bypass all provider logic with a pre-obtained token:
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'your-token',
   recaptcha: {
-    provider: 'capsolver',
-    apiKey: 'your-api-key',
-    proxy: 'http://username:password@proxy.example.com:8080',
+    provider: 'chrome',  // required but ignored
+    staticToken: 'your-pre-obtained-token',
   },
 });
 ```
 
-**Proxy formats:**
-- HTTP: `http://user:pass@ip:port`
-- SOCKS5: `socks5://user:pass@ip:port`
+## Fallback Chains
 
-## Automatic Retry on Evaluation Failure
+Configure a fallback provider when the primary fails:
 
-Sometimes reCAPTCHA tokens are rejected by Google with "reCAPTCHA evaluation failed". The SDK automatically handles this by:
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  recaptcha: {
+    provider: 'chrome',
+    chromeOptions: { headless: false },
+    fallback: {
+      provider: 'yescaptcha',
+      apiKey: 'your-yescaptcha-key',
+      fallback: {
+        provider: 'regotcha',
+        apiKey: 'your-regotcha-key',
+      },
+    },
+  },
+});
+```
 
-1. Detecting the evaluation failure response
-2. Requesting a new token from your provider
-3. Retrying the request (up to 3 attempts by default)
+When Chrome fails to produce a token, the SDK automatically tries YesCaptcha, then Regotcha.
 
-This is controlled by the `RECAPTCHA_EVAL_MAX_RETRIES` constant (default: 3).
+## Configuration Reference
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `provider` | `RecaptchaProvider` | Yes | Provider to use |
+| `apiKey` | `string` | Yes* | API key (*not required for custom/veo3solver/chrome/playwright) |
+| `jwtToken` | `string` | No** | JWT token (**required for veo3solver) |
+| `customEndpoint` | `string` | No*** | Solver URL (***required for custom) |
+| `staticToken` | `string` | No | Static token (bypasses provider) |
+| `proxy` | `string` | No | Proxy URL (CapSolver and Custom) |
+| `anchor` | `string` | No | Anchor parameter (Custom only) |
+| `reload` | `string` | No | Reload parameter (Custom only) |
+| `maxRetries` | `number` | No | Max polling attempts |
+| `pageAction` | `string` | No | Override reCAPTCHA page action |
+| `playwrightOptions` | `object` | No | Playwright browser config |
+| `chromeOptions` | `object` | No | Chrome browser config |
+| `fallback` | `RecaptchaConfig` | No | Fallback provider config |
+
+### RecaptchaProvider Values
+
+```typescript
+type RecaptchaProvider =
+  | 'chrome'       // Real Chrome browser (persistent)
+  | 'playwright'   // Playwright browser
+  | 'yescaptcha'   // YesCaptcha cloud service
+  | 'regotcha'     // Regotcha cloud service
+  | 'capsolver'    // CapSolver cloud service
+  | 'veo3solver'   // Veo3Solver token service
+  | 'custom';      // Self-hosted solver
+```
+
+## How It Works
+
+### Cloud Provider Flow (YesCaptcha, CapSolver, Regotcha)
 
 ```
-[Image] Fetching reCAPTCHA token (attempt 1/3)...
+SDK → Provider: createTask (ReCaptchaV3Enterprise)
+Provider → SDK: taskId
+SDK → Provider: getTaskResult (polling every 2-5s)
+Provider → SDK: { token: "03AFcWeA..." }
+```
+
+### Browser Provider Flow (Chrome, Playwright)
+
+```
+SDK: Navigate to labs.google in browser
+SDK: Execute grecaptcha.enterprise.execute()
+SDK: Extract reCAPTCHA token from page
+SDK → API: Include token in request
+```
+
+### Automatic Retry on Evaluation Failure
+
+When Google rejects a token with "reCAPTCHA evaluation failed":
+
+1. SDK detects the 403 evaluation failure
+2. Requests a new token from provider
+3. Retries the API request (up to 20 attempts)
+
+```
 [Image] reCAPTCHA token obtained, generating...
-[Image] reCAPTCHA evaluation failed (attempt 1/3), retrying with new token...
-[Image] Fetching reCAPTCHA token (attempt 2/3)...
+[Image] reCAPTCHA evaluation failed (attempt 1/20), retrying...
 [Image] reCAPTCHA token obtained, generating...
 ✓ Success
 ```
 
 ## Without reCAPTCHA
 
-Both image and video generation require reCAPTCHA configuration. Without it, requests will fail immediately:
+Without reCAPTCHA configuration, generation requests will fail:
 
 ```typescript
-// This will throw immediately
 const client = new GLabsClient({
   bearerToken: 'your-token',
-  // No recaptcha config - ERROR!
+  // No recaptcha config
 });
 
 await client.images.generate({...});
 // Error: reCAPTCHA configuration is required for image generation
-
-await client.videos.generateTextToVideo({...});
-// Error: reCAPTCHA configuration is required for video generation
 ```
 
-## Error Handling
+## Cleanup
+
+Browser-based providers (Chrome, Playwright) maintain persistent browser instances. Always close the client when done:
 
 ```typescript
-import { GLabsError } from '@getvrex/glabs-sdk';
-
-try {
-  await client.videos.generateTextToVideo({...});
-} catch (error) {
-  if (error instanceof GLabsError) {
-    switch (error.code) {
-      case 'RECAPTCHA_REQUIRED':
-        console.error('Configure reCAPTCHA in client options');
-        break;
-      case 'RECAPTCHA_EVAL_FAILED':
-        console.error('Token evaluation failed after all retries');
-        break;
-      case 'RECAPTCHA_TIMEOUT':
-        console.error('Token request timed out, try again');
-        break;
-      case 'RECAPTCHA_FAILED':
-        console.error('Token request failed:', error.message);
-        break;
-      case 'RECAPTCHA_API_ERROR':
-        console.error('Provider API error:', error.message);
-        break;
-    }
-  }
-}
+await client.close();
 ```
-
-## Cost Considerations
-
-All providers charge per solved captcha:
-
-- **Regotcha** (Recommended): Check current pricing at [regotcha.com](https://regotcha.com)
-- **CapSolver** (Recommended): Check current pricing at [capsolver.com](https://capsolver.com)
-- **YesCaptcha**: Check current pricing at [yescaptcha.com](https://yescaptcha.com)
-
-**Note:** Each generation request requires a new token. If evaluation fails, the SDK will request additional tokens (up to 3 per request). Plan your budget accordingly.

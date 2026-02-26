@@ -1,236 +1,394 @@
 ---
 title: Video Generation
-description: Generate AI videos with Google Labs Veo
+description: Generate, extend, reshoot, and upscale videos with Veo 3
 ---
 
 # Video Generation
 
-Generate AI videos using Google's Veo models through the `client.videos` API.
+Generate AI videos using Google's Veo 3.1 models via `client.videos`.
 
-## Video Generation Types
+## Text-to-Video
 
-The SDK supports multiple video generation methods:
-
-| Method | Description |
-|--------|-------------|
-| `generateTextToVideo` | Generate video from text prompt |
-| `generateImageToVideo` | Generate video from image (first frame) |
-| `extend` | Extend an existing video |
-| `reshoot` | Apply camera control to video |
-| `upsample` | Upscale video to HD (1080p) |
-| `generateReferenceImagesVideo` | Generate video using reference images |
-
-## Text to Video
-
-Generate a video from a text description:
+Generate a video from a text prompt:
 
 ```typescript
 const operation = await client.videos.generateTextToVideo({
-  prompt: 'A cinematic drone shot of a city at golden hour',
+  prompt: 'A cinematic drone shot over a tropical coastline at golden hour',
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
-  videoMode: 'quality', // or 'fast'
+  videoMode: 'quality',  // optional: 'quality' | 'fast'
 });
 
-console.log(operation.operationName); // Use for status polling
-console.log(operation.sceneId);
-console.log(operation.status);
-console.log(operation.remainingCredits);
+console.log('Operation:', operation.operationName);
+console.log('Scene ID:', operation.sceneId);
+console.log('Credits remaining:', operation.remainingCredits);
 ```
 
 ### Options
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `prompt` | `string` | Yes | Video description |
-| `sessionId` | `string` | Yes | Session identifier |
-| `aspectRatio` | `AspectRatio` | Yes | Video aspect ratio |
-| `videoMode` | `VideoMode` | No | Generation mode |
-| `projectId` | `string` | No | Project ID |
-| `accountTier` | `AccountTier` | No | Account tier |
-| `seed` | `number` | No | Random seed |
-| `sceneId` | `string` | No | Scene identifier |
+```typescript
+type GenerateTextToVideoOptions = {
+  prompt: string;              // Required: video description
+  sessionId: string;           // Required: session ID
+  aspectRatio: AspectRatio;    // Required: '16:9' | '9:16' | '1:1'
+  projectId?: string;          // Auto-resolved if omitted
+  accountTier?: AccountTier;   // Override client tier for this request
+  videoMode?: VideoMode;       // 'quality' | 'fast' (default: tier-dependent)
+  seed?: number;               // Random seed for reproducibility
+  sceneId?: string;            // Scene ID for tracking
+};
+```
 
-## Image to Video
+## Image-to-Video
 
-Generate video from an image (first frame):
+Generate a video from a start frame image, optionally with an end frame:
 
 ```typescript
-// Upload or use existing image
-const imageResult = await client.images.upload({
-  imageBase64: myImage,
+// Upload an image first
+const upload = await client.images.upload({
+  imageBase64: myImageBase64,
   sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
 });
 
-// Generate video from image
+// Start frame only (I2V)
 const operation = await client.videos.generateImageToVideo({
-  prompt: 'The scene comes to life with gentle motion',
+  prompt: 'Camera slowly zooms into the scene',
+  startMediaId: upload.mediaId!,
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
-  startMediaId: imageResult.mediaId!,
 });
-```
 
-### First and Last Frame
-
-Generate video with both start and end frames:
-
-```typescript
-const operation = await client.videos.generateImageToVideo({
-  prompt: 'Smooth transition from day to night',
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-  startMediaId: startImage.mediaId!,
-  endMediaId: endImage.mediaId!, // Enables FL (First-Last) mode
-});
-```
-
-## Extend Video
-
-Extend an existing video with new content:
-
-```typescript
-const operation = await client.videos.extend({
-  mediaId: existingVideo.mediaGenerationId!,
-  prompt: 'The camera continues forward revealing more of the landscape',
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-  startFrameIndex: 168, // Optional: default is 168
-  endFrameIndex: 191,   // Optional: default is 191
-});
-```
-
-## Camera Control (Reshoot)
-
-Apply camera movements to an existing video:
-
-```typescript
-const operation = await client.videos.reshoot({
-  mediaId: video.mediaGenerationId!,
-  reshootMotionType: 'RESHOOT_MOTION_TYPE_FORWARD',
+// First + Last frame (I2V-FL)
+const operationFL = await client.videos.generateImageToVideo({
+  prompt: 'Smooth transition between scenes',
+  startMediaId: startUpload.mediaId!,
+  endMediaId: endUpload.mediaId!,  // triggers FL mode
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
 });
 ```
 
-### Available Motion Types
-
-**Camera Control:**
-- `RESHOOT_MOTION_TYPE_UP`
-- `RESHOOT_MOTION_TYPE_DOWN`
-- `RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT`
-- `RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT`
-- `RESHOOT_MOTION_TYPE_FORWARD`
-- `RESHOOT_MOTION_TYPE_BACKWARD`
-- `RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT`
-- `RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE`
-
-**Stationary Camera:**
-- `RESHOOT_MOTION_TYPE_STATIONARY_UP`
-- `RESHOOT_MOTION_TYPE_STATIONARY_DOWN`
-- `RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE`
-- `RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE`
-- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT`
-- `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
-
-## HD Upscaling
-
-Upscale a video to 1080p HD:
+### Options
 
 ```typescript
-const operation = await client.videos.upsample({
-  originalMediaId: video.mediaGenerationId!,
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9', // Only 16:9 supported for upscaling
-});
+type GenerateImageToVideoOptions = {
+  prompt: string;              // Required: video description
+  startMediaId: string;        // Required: first frame image media ID
+  sessionId: string;           // Required
+  aspectRatio: AspectRatio;    // Required
+  endMediaId?: string;         // Last frame image (triggers FL mode)
+  projectId?: string;          // Auto-resolved
+  accountTier?: AccountTier;   // Override client tier
+  videoMode?: VideoMode;       // 'quality' | 'fast'
+  seed?: number;
+  sceneId?: string;
+  cropCoordinates?: {          // Crop the start image
+    top?: number;
+    left?: number;
+    bottom?: number;
+    right?: number;
+  };
+};
 ```
 
 ## Reference Images Video
 
-Generate video using 1-3 reference images:
+Generate a video using 1-3 reference images for style/content guidance:
 
 ```typescript
 const operation = await client.videos.generateReferenceImagesVideo({
-  prompt: 'An animated scene combining these visual styles',
-  referenceMediaIds: [
-    image1.mediaId!,
-    image2.mediaId!,
-    image3.mediaId!, // Maximum 3 images
-  ],
+  prompt: 'A product showcase with elegant lighting',
+  referenceMediaIds: ['media-id-1', 'media-id-2', 'media-id-3'],
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
 });
 ```
 
-## Check Video Status
+### Options
 
-Poll for video generation completion:
+```typescript
+type GenerateReferenceImagesVideoOptions = {
+  prompt: string;              // Required
+  referenceMediaIds: string[]; // Required: 1-3 media IDs
+  sessionId: string;           // Required
+  aspectRatio: AspectRatio;    // Required
+  projectId?: string;
+  accountTier?: AccountTier;
+  videoMode?: VideoMode;
+  seed?: number;
+  sceneId?: string;
+};
+```
+
+## Extend Video
+
+Extend an existing video with additional content:
+
+```typescript
+const operation = await client.videos.extend({
+  mediaId: 'existing-video-media-id',
+  prompt: 'Continue the scene with a dramatic reveal',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  workflowId: 'optional-workflow-id',
+});
+```
+
+### Options
+
+```typescript
+type ExtendVideoOptions = {
+  mediaId: string;             // Required: video to extend
+  prompt: string;              // Required: extension description
+  sessionId: string;           // Required
+  aspectRatio: AspectRatio;    // Required
+  projectId?: string;
+  accountTier?: AccountTier;
+  videoMode?: VideoMode;
+  seed?: number;
+  sceneId?: string;
+  workflowId?: string;        // Tracking workflow ID
+};
+```
+
+## Reshoot (Camera Control)
+
+Apply camera motion controls to an existing video:
+
+```typescript
+const operation = await client.videos.reshoot({
+  mediaId: 'existing-video-media-id',
+  reshootMotionType: 'RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+```
+
+### Motion Types
+
+**Camera Movement:**
+| Type | Description |
+|------|-------------|
+| `RESHOOT_MOTION_TYPE_UP` | Pan up |
+| `RESHOOT_MOTION_TYPE_DOWN` | Pan down |
+| `RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT` | Pan left to right |
+| `RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT` | Pan right to left |
+| `RESHOOT_MOTION_TYPE_FORWARD` | Move forward |
+| `RESHOOT_MOTION_TYPE_BACKWARD` | Move backward |
+| `RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT` | Dolly in + zoom out |
+| `RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE` | Dolly out + zoom in |
+
+**Camera Position (stationary movement):**
+| Type | Description |
+|------|-------------|
+| `RESHOOT_MOTION_TYPE_STATIONARY_UP` | Tilt up |
+| `RESHOOT_MOTION_TYPE_STATIONARY_DOWN` | Tilt down |
+| `RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE` | Pan left |
+| `RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE` | Pan right |
+| `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT` | Stationary dolly in |
+| `RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE` | Stationary dolly out |
+
+## Upsample (Upscale) Video
+
+Upscale a video to HD (1080p) or 4K:
+
+```typescript
+const operation = await client.videos.upsample({
+  originalMediaId: 'video-media-id',
+  sessionId: GLabsClient.generateSessionId(),
+  projectId: 'project-id',
+  accountTier: 'pro',
+  aspectRatio: '16:9',
+  resolution: 'VIDEO_RESOLUTION_4K',  // default
+});
+```
+
+### Options
+
+```typescript
+type UpsampleVideoOptions = {
+  originalMediaId: string;     // Required: video to upscale
+  sessionId: string;           // Required
+  projectId: string;           // Required
+  accountTier: AccountTier;    // Required
+  aspectRatio: AspectRatio;    // Required
+  seed?: number;
+  sceneId?: string;
+  workflowId?: string;
+  resolution?: VideoResolution; // 'VIDEO_RESOLUTION_1080P' | 'VIDEO_RESOLUTION_4K' (default: 4K)
+};
+```
+
+## Check Status
+
+Check the status of a video generation operation:
 
 ```typescript
 const status = await client.videos.checkStatus({
   operationName: operation.operationName,
-  sceneId: operation.sceneId, // Optional
 });
 
-console.log(status.status);            // Generation status
-console.log(status.videoUrl);          // Video URL when complete
-console.log(status.thumbnailUrl);      // Thumbnail URL
-console.log(status.duration);          // Duration in seconds
-console.log(status.mediaGenerationId); // Media ID for further operations
-console.log(status.error);             // Error message if failed
-console.log(status.remainingCredits);  // Remaining credits
+console.log('Status:', status.status);
+console.log('Video URL:', status.videoUrl);
+console.log('Thumbnail:', status.thumbnailUrl);
+console.log('Duration:', status.duration, 'seconds');
+```
+
+### Options
+
+```typescript
+type CheckVideoStatusOptions = {
+  operationName?: string;  // Operation name (legacy format)
+  sceneId?: string;        // Scene ID (optional)
+  mediaId?: string;        // Media ID (new format)
+  projectId?: string;      // Project ID (new format)
+};
 ```
 
 ### Status Values
 
 | Status | Description |
 |--------|-------------|
-| `MEDIA_GENERATION_STATUS_PENDING` | Generation queued |
-| `MEDIA_GENERATION_STATUS_ACTIVE` | Generation started |
-| `MEDIA_GENERATION_STATUS_PROCESSING` | Generation in progress |
-| `MEDIA_GENERATION_STATUS_SUCCESSFUL` | Video ready (success) |
-| `MEDIA_GENERATION_STATUS_COMPLETED` | Video ready (alternative) |
+| `MEDIA_GENERATION_STATUS_PENDING` | Queued |
+| `MEDIA_GENERATION_STATUS_ACTIVE` | Processing started |
+| `MEDIA_GENERATION_STATUS_PROCESSING` | Actively generating |
+| `MEDIA_GENERATION_STATUS_COMPLETED` | Finished |
+| `MEDIA_GENERATION_STATUS_SUCCESSFUL` | Success with result |
 | `MEDIA_GENERATION_STATUS_FAILED` | Generation failed |
 
-### Polling Example
+## Poll Operation
+
+Poll a video operation until completion with progress callbacks:
 
 ```typescript
-async function waitForVideo(operationName: string): Promise<VideoStatusResult> {
-  const maxAttempts = 60;
-  const pollInterval = 5000; // 5 seconds
+const result = await client.videos.pollOperation({
+  operationName: operation.operationName,
+  maxAttempts: 60,       // default: 60
+  intervalMs: 10000,     // default: 10000 (10s)
+  onProgress: (status, attempt) => {
+    console.log(`[${attempt}/60] ${status.status}`);
+  },
+});
 
-  for (let i = 0; i < maxAttempts; i++) {
-    const status = await client.videos.checkStatus({ operationName });
-
-    // Check for success (API may return either status)
-    if (
-      status.status === 'MEDIA_GENERATION_STATUS_SUCCESSFUL' ||
-      status.status === 'MEDIA_GENERATION_STATUS_COMPLETED'
-    ) {
-      return status;
-    }
-
-    if (status.status === 'MEDIA_GENERATION_STATUS_FAILED') {
-      throw new Error(status.error ?? 'Video generation failed');
-    }
-
-    // Still processing (PENDING, ACTIVE, or PROCESSING)
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error('Video generation timed out');
+if (result.videoUrl) {
+  console.log('Video URL:', result.videoUrl);
+} else if (result.error) {
+  console.error('Failed:', result.error);
 }
+```
 
-const operation = await client.videos.generateTextToVideo({...});
-const result = await waitForVideo(operation.operationName);
-console.log('Video URL:', result.videoUrl);
+### Options
+
+```typescript
+type PollOperationOptions = {
+  operationName?: string;      // Operation name
+  sceneId?: string;            // Scene ID
+  mediaId?: string;            // Media ID (new format)
+  projectId?: string;          // Project ID (new format)
+  maxAttempts?: number;        // Max polls (default: 60)
+  intervalMs?: number;         // Interval between polls in ms (default: 10000)
+  onProgress?: (status: VideoStatusResult, attempt: number) => void;
+};
+```
+
+### Result
+
+```typescript
+type VideoStatusResult = {
+  status: string;              // Generation status
+  videoUrl?: string;           // URL to generated video
+  thumbnailUrl?: string;       // Thumbnail URL
+  duration?: number;           // Duration in seconds
+  mediaGenerationId?: string;  // Generation ID
+  error?: string;              // Error message if failed
+  remainingCredits?: number;   // Credits remaining
+};
+```
+
+## Operation Result
+
+All generation methods return a `VideoOperationResult`:
+
+```typescript
+type VideoOperationResult = {
+  operationName: string;       // For status polling
+  sceneId: string;             // Scene identifier
+  mediaId?: string;            // Media ID
+  status: string;              // Initial status
+  remainingCredits?: number;   // Credits after operation
+};
 ```
 
 ## Video Modes
 
-| Mode | Description |
-|------|-------------|
-| `quality` | Higher quality, slower generation |
-| `fast` | Lower quality, faster generation |
+| Mode | Description | Default For |
+|------|-------------|-------------|
+| `quality` | Higher quality, slower | Ultra tier |
+| `fast` | Faster generation | Pro tier |
 
-Note: Pro accounts default to `fast` mode, Ultra accounts default to `quality` mode.
+The mode is automatically selected based on your account tier, but can be overridden per-request:
+
+```typescript
+// Force quality mode on Pro tier
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'A slow-motion waterfall',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  videoMode: 'quality',
+});
+```
+
+## Complete Example: Image-to-Video Pipeline
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+import { readFileSync } from 'fs';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_BEARER_TOKEN!,
+  sessionToken: process.env.GLABS_SESSION_TOKEN,
+  accountTier: 'pro',
+  recaptcha: { provider: 'regotcha', apiKey: process.env.RECAPTCHA_API_KEY! },
+});
+
+// 1. Upload image
+const imageData = readFileSync('scene.jpg').toString('base64');
+const upload = await client.images.upload({
+  imageBase64: imageData,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// 2. Generate video from image
+const operation = await client.videos.generateImageToVideo({
+  prompt: 'Camera slowly reveals the full landscape with gentle wind',
+  startMediaId: upload.mediaId!,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
+
+// 3. Poll until done
+const result = await client.videos.pollOperation({
+  operationName: operation.operationName,
+  onProgress: (s, n) => console.log(`[${n}] ${s.status}`),
+});
+
+// 4. Extend the video
+if (result.mediaGenerationId) {
+  const extendOp = await client.videos.extend({
+    mediaId: result.mediaGenerationId,
+    prompt: 'Continue with a dramatic sunset reveal',
+    sessionId: GLabsClient.generateSessionId(),
+    aspectRatio: '16:9',
+  });
+
+  const extendResult = await client.videos.pollOperation({
+    operationName: extendOp.operationName,
+  });
+
+  console.log('Extended video:', extendResult.videoUrl);
+}
+
+await client.close();
+```

@@ -1,0 +1,92 @@
+---
+title: Token Management
+description: Automatic bearer token refresh via session token (ST→AT)
+---
+
+# Token Management
+
+The SDK includes automatic bearer token lifecycle management. When you provide a `sessionToken`, the SDK proactively refreshes the bearer token before it expires.
+
+## How It Works
+
+The **ST→AT (Session Token → Access Token)** flow:
+
+1. SDK calls Google Labs session endpoint with your `sessionToken` cookie
+2. Receives a fresh `access_token` (bearer token) with expiry time
+3. Updates the bearer token in-place — all services see the new token immediately
+
+```
+Client → labs.google/fx/api/auth/session (Cookie: __Secure-next-auth.session-token=...)
+labs.google → Client: { access_token: "ya29...", expires: "2026-02-27T10:00:00Z", user: { email: "..." } }
+```
+
+## Configuration
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'initial-bearer-token',  // can be expired — will be refreshed
+  sessionToken: 'your-session-token',   // from __Secure-next-auth.session-token cookie
+  accountTier: 'pro',
+});
+```
+
+## Automatic Refresh
+
+With `sessionToken` configured, the SDK:
+
+1. **Proactive refresh** — Refreshes the token 1 hour before expiry
+2. **On-demand refresh** — On 401 responses, refreshes and retries the request once
+3. **Deduplication** — Multiple concurrent calls share a single refresh request
+
+```
+[TokenManager] Refreshing bearer token via session...
+[TokenManager] Token refreshed (user: you@gmail.com, expires in 180m)
+```
+
+## Manual Refresh
+
+Force a token refresh at any time:
+
+```typescript
+await client.refreshToken();
+```
+
+Throws `GLabsError` if no `sessionToken` is configured:
+
+```
+Cannot refresh token: no sessionToken configured.
+Provide sessionToken (__Secure-next-auth.session-token cookie) in client config.
+```
+
+## Without Session Token
+
+If you only provide `bearerToken` without `sessionToken`:
+- No automatic refresh occurs
+- Token is used as-is until it expires
+- 401 errors are thrown directly
+- `client.refreshToken()` will throw
+
+## Getting the Session Token
+
+The session token is the value of the `__Secure-next-auth.session-token` cookie from `labs.google`:
+
+1. Open https://labs.google in Chrome
+2. Open DevTools → Application → Cookies
+3. Find `__Secure-next-auth.session-token`
+4. Copy the value
+
+This cookie typically lasts for several days to weeks.
+
+## TokenManager (Advanced)
+
+The `TokenManager` is used internally but exported for advanced use cases:
+
+```typescript
+import { TokenManager } from '@getvrex/glabs-sdk';
+```
+
+It provides:
+- `ensureValid()` — Check and refresh if needed (safe to call frequently)
+- `forceRefresh()` — Force immediate refresh
+- Concurrent deduplication of refresh calls
+- Configurable refresh threshold (default: 1 hour before expiry)

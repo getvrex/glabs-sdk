@@ -1,21 +1,24 @@
 ---
 title: GLabs SDK
-description: TypeScript SDK for Google Labs AI media generation APIs
+description: TypeScript SDK for Google Labs AI media generation APIs (Imagen, Veo)
 ---
 
 # GLabs SDK
 
-`@getvrex/glabs-sdk` is a TypeScript SDK for interacting with Google Labs AI APIs for image and video generation.
+`@getvrex/glabs-sdk` is a TypeScript SDK for Google Labs AI media generation APIs — **Imagen 4** for images and **Veo 3** for videos.
 
 ## Features
 
-- **Image Generation** - Generate AI images using Google's Imagen models
-- **Video Generation** - Create videos using Google's Veo models
-- **Multiple Video Modes** - Support for text-to-video, image-to-video, video extension, camera control, and more
-- **Account Tier Support** - Automatic handling of Pro and Ultra tier differences
-- **reCAPTCHA Integration** - Built-in support for YesCaptcha and CapSolver providers
-- **Type-Safe** - Full TypeScript support with exported types
-- **Retry Logic** - Automatic retry on network errors
+- **Image Generation** — Imagen 4 with multiple aspect ratios, batch generation, upsampling to 2K/4K
+- **Video Generation** — Veo 3 text-to-video, image-to-video, first+last frame, extend, camera control reshoot, reference images, HD/4K upsample
+- **Project Management** — List, get, and auto-resolve Google Labs projects
+- **Auto Token Refresh** — Automatic ST→AT (session token to access token) refresh with proactive renewal
+- **reCAPTCHA Integration** — 7 providers: Regotcha, CapSolver, YesCaptcha, Veo3Solver, Playwright browser, Chrome browser, Custom
+- **OpenAI-Compatible Server** — Drop-in `/v1/chat/completions` and `/v1/models` endpoints
+- **Whisk Service** — Standalone Imagen 3.5 generation via Google Whisk API
+- **Tier-Aware** — Automatic model selection based on Pro/Ultra account tier
+- **Polling** — Built-in `pollOperation()` for video generation with progress callbacks
+- **Type-Safe** — Full TypeScript support with 60+ exported types
 
 ## Quick Start
 
@@ -24,11 +27,11 @@ import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
   bearerToken: 'your-bearer-token',
+  sessionToken: 'your-session-token',  // enables auto token refresh
   accountTier: 'pro',
-  projectId: 'your-project-id',
   recaptcha: {
-    provider: 'yescaptcha',
-    apiKey: 'your-recaptcha-api-key',
+    provider: 'regotcha',
+    apiKey: 'your-api-key',
   },
 });
 
@@ -39,17 +42,24 @@ const imageResult = await client.images.generate({
   aspectRatio: '16:9',
 });
 
-// Generate a video
-const videoOp = await client.videos.generateTextToVideo({
-  prompt: 'A cinematic drone shot of a city at sunset',
+// Generate a video and poll until done
+const operation = await client.videos.generateTextToVideo({
+  prompt: 'A cinematic drone shot of a city',
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
 });
 
-// Check video status
-const status = await client.videos.checkStatus({
-  operationName: videoOp.operationName,
+const result = await client.videos.pollOperation({
+  operationName: operation.operationName,
+  onProgress: (status, attempt) => {
+    console.log(`Attempt ${attempt}: ${status.status}`);
+  },
 });
+
+console.log('Video URL:', result.videoUrl);
+
+// Clean up persistent resources when done
+await client.close();
 ```
 
 ## Next Steps
@@ -59,11 +69,13 @@ const status = await client.videos.checkStatus({
   <Card title="Client Configuration" href="/docs/glabs-sdk/client" />
   <Card title="Image Generation" href="/docs/glabs-sdk/image-generation" />
   <Card title="Video Generation" href="/docs/glabs-sdk/video-generation" />
+  <Card title="reCAPTCHA" href="/docs/glabs-sdk/recaptcha" />
+  <Card title="OpenAI Server" href="/docs/glabs-sdk/openai-server" />
 </Cards>
 
 ## LLM-Friendly Documentation
 
 For AI assistants and LLMs, we provide optimized documentation:
 
-- [`/llms.txt`](/llms.txt) - Quick reference index (~2K tokens)
-- [`/llms-full.txt`](/llms-full.txt) - Complete API documentation (~20K tokens)
+- [`/llms.txt`](/llms.txt) — Quick reference index (~2K tokens)
+- [`/llms-full.txt`](/llms-full.txt) — Complete API documentation (~20K tokens)

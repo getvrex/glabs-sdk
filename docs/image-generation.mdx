@@ -1,177 +1,224 @@
 ---
 title: Image Generation
-description: Generate AI images with Google Labs Imagen
+description: Generate, upload, and upsample images with Imagen 4
 ---
 
 # Image Generation
 
-Generate AI images using Google's Imagen models through the `client.images` API.
+Generate AI images using Google's Imagen 4 models via `client.images`.
 
-> **Note:** Image generation requires reCAPTCHA configuration. See [reCAPTCHA Configuration](/docs/glabs-sdk/recaptcha) for setup instructions.
-
-## Upload Image
-
-Upload an image for use as a reference in generation:
+## Generate Images
 
 ```typescript
-const result = await client.images.upload({
-  imageBase64: 'base64-encoded-image-data',
+const result = await client.images.generate({
+  prompt: 'A photorealistic portrait of a robot painter',
   sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9', // Optional: '16:9' | '9:16' | '1:1'
+  aspectRatio: '16:9',
 });
 
-console.log(result.mediaId);           // Use this ID as a reference
-console.log(result.mediaGenerationId); // Same as mediaId
-console.log(result.width);             // Image width
-console.log(result.height);            // Image height
+for (const image of result.images) {
+  console.log('Base64:', image.encodedImage?.slice(0, 50) + '...');
+  console.log('CDN URL:', image.fifeUrl);
+  console.log('Media ID:', image.mediaId);
+}
+```
+
+### Options
+
+```typescript
+type GenerateImageOptions = {
+  prompt: string;              // Required: text prompt
+  sessionId: string;           // Required: session ID
+  aspectRatio: AspectRatio;    // Required: '16:9' | '9:16' | '1:1'
+  projectId?: string;          // Auto-resolved if omitted
+  model?: ImageModel;          // 'nanobanana' | 'nanobananapro' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra'
+  count?: number;              // Images to generate (1-4, default: 1)
+  references?: ImageReference[]; // Reference images for style guidance
+  seed?: number;               // Random seed for reproducibility
+  prompts?: string[];          // Multiple different prompts (overrides count)
+};
+```
+
+### Result
+
+```typescript
+type GenerateImageResult = {
+  images: GeneratedImage[];
+  sessionId: string;
+};
+
+type GeneratedImage = {
+  encodedImage?: string;       // Base64-encoded PNG
+  mediaId?: string;            // Media ID (use for video generation)
+  mediaGenerationId?: string;  // Generation tracking ID
+  workflowId?: string;         // Workflow tracking ID
+  prompt?: string;             // Prompt used for this image
+  seed?: number;               // Seed used
+  mimeType?: string;           // Image MIME type
+  fifeUrl?: string;            // Google CDN URL
+};
+```
+
+### Batch Generation
+
+Generate multiple images in one request:
+
+```typescript
+// Same prompt, multiple images
+const result = await client.images.generate({
+  prompt: 'A futuristic cityscape',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  count: 4,  // up to 4
+});
+
+// Different prompts per image
+const result = await client.images.generate({
+  prompt: 'base prompt',  // required but overridden by prompts[]
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '1:1',
+  prompts: [
+    'A red sports car',
+    'A blue sports car',
+    'A green sports car',
+  ],
+});
+```
+
+### Image Models
+
+| Model | Internal Name | Description |
+|-------|--------------|-------------|
+| `nanobanana` | `GEM_PIX` | Imagen 4 standard |
+| `nanobananapro` | `GEM_PIX_2` | Imagen 4 Pro |
+| `imagen-4` | `GEM_PIX` | Alias for nanobanana |
+| `imagen-4-fast` | `GEM_PIX` | Fast variant |
+| `imagen-4-ultra` | `GEM_PIX` | Ultra variant |
+
+### Reference Images
+
+Use previously generated or uploaded images as style references:
+
+```typescript
+const result = await client.images.generate({
+  prompt: 'Same style but with a mountain background',
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  references: [
+    { mediaId: 'previously-generated-media-id' },
+    { mediaGenerationId: 'another-generation-id' },
+  ],
+});
+```
+
+## Upload Images
+
+Upload a base64-encoded image for use in image-to-video generation:
+
+```typescript
+import { readFileSync } from 'fs';
+
+const imageBase64 = readFileSync('photo.jpg').toString('base64');
+
+const upload = await client.images.upload({
+  imageBase64,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+  fileName: 'photo.jpg',
+});
+
+console.log('Media ID:', upload.mediaId);
+console.log('Media Gen ID:', upload.mediaGenerationId);
+
+// Use the mediaId for image-to-video generation
+await client.videos.generateImageToVideo({
+  prompt: 'Camera slowly pans across the scene',
+  startMediaId: upload.mediaId!,
+  sessionId: GLabsClient.generateSessionId(),
+  aspectRatio: '16:9',
+});
 ```
 
 ### Upload Options
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `imageBase64` | `string` | Yes | Base64-encoded image (with or without data URL prefix) |
-| `sessionId` | `string` | Yes | Unique session identifier |
-| `aspectRatio` | `AspectRatio` | No | Target aspect ratio |
-
-## Generate Images
-
-Generate images from a text prompt:
-
 ```typescript
-const result = await client.images.generate({
-  prompt: 'A majestic mountain landscape at sunset',
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-  count: 4,         // Generate 4 images
-  model: 'nanobanana', // or 'nanobananapro'
-});
-
-for (const image of result.images) {
-  console.log(image.encodedImage); // Base64 image data
-  console.log(image.mediaId);      // Media ID for video generation
-  console.log(image.fifeUrl);      // CDN URL if available
-}
+type UploadImageOptions = {
+  imageBase64: string;     // Base64 data (with or without data URL prefix)
+  sessionId: string;       // Session ID
+  aspectRatio?: AspectRatio; // Aspect ratio hint
+  projectId?: string;      // Project ID
+  fileName?: string;       // File name
+  mimeType?: string;       // MIME type (auto-detected from data URL)
+};
 ```
 
-### Generate Options
-
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `prompt` | `string` | Yes | Description of the image to generate |
-| `sessionId` | `string` | Yes | Unique session identifier |
-| `aspectRatio` | `AspectRatio` | Yes | Image aspect ratio |
-| `projectId` | `string` | No* | Project ID (uses client default if not provided) |
-| `references` | `ImageReference[]` | No | Reference images for style |
-| `seed` | `number` | No | Random seed for reproducibility |
-| `count` | `number` | No | Number of images (1-4, default: 1) |
-| `model` | `ImageModel` | No | Model to use |
-| `prompts` | `string[]` | No | Different prompts for each image |
-
-\* Required if not set in client config
-
-## Using Reference Images
-
-Generate images inspired by uploaded references:
+### Upload Result
 
 ```typescript
-// First, upload reference images
-const ref1 = await client.images.upload({
-  imageBase64: styleImage,
-  sessionId: GLabsClient.generateSessionId(),
-});
-
-// Generate using reference
-const result = await client.images.generate({
-  prompt: 'A similar landscape in winter',
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-  references: [
-    { mediaId: ref1.mediaId },
-  ],
-});
+type UploadImageResult = {
+  mediaGenerationId?: string;
+  mediaId?: string;
+  width?: number;
+  height?: number;
+  workflowId?: string;
+  sessionId: string;
+};
 ```
 
-## Multiple Different Prompts
+## Upsample Images
 
-Generate images with different prompts in a single request:
+Upscale an image to 2K or 4K resolution:
 
 ```typescript
-const result = await client.images.generate({
-  prompt: 'fallback prompt', // Used if prompts array is short
-  sessionId: GLabsClient.generateSessionId(),
-  aspectRatio: '16:9',
-  prompts: [
-    'A cat sitting on a windowsill',
-    'A dog playing in the park',
-    'A bird flying over the ocean',
-    'A fish swimming in a coral reef',
-  ],
+const upsampled = await client.images.upsampleImage({
+  mediaId: 'generated-image-media-id',
+  targetResolution: 'UPSAMPLE_IMAGE_RESOLUTION_4K',
 });
 
-// result.images[0] -> cat
-// result.images[1] -> dog
-// result.images[2] -> bird
-// result.images[3] -> fish
+console.log('Upsampled base64:', upsampled.encodedImage.slice(0, 50) + '...');
 ```
 
-## Check Credit Status
+### Upsample Options
 
-Check your account's credit balance:
+```typescript
+type UpsampleImageOptions = {
+  mediaId: string;           // Media ID of the image to upsample
+  targetResolution?: 'UPSAMPLE_IMAGE_RESOLUTION_2K' | 'UPSAMPLE_IMAGE_RESOLUTION_4K';
+  projectId?: string;
+  sessionId?: string;
+};
+```
+
+## Credit Status
+
+Check your account's video credit balance:
 
 ```typescript
 const credits = await client.images.getCreditStatus();
 
-console.log(credits.credits);                    // Remaining credits
-console.log(credits.userPaygateTier);            // Payment tier
-console.log(credits.g1MembershipState);          // Membership state
-console.log(credits.isUserAnimateCountryEnabled); // Animate feature access
+console.log('Credits:', credits.credits);
+console.log('Tier:', credits.userPaygateTier);
+console.log('Animate enabled:', credits.isUserAnimateCountryEnabled);
 ```
 
-## Image Models
+### CreditStatusResult
 
-| Model | Description |
-|-------|-------------|
-| `nanobanana` | Standard Imagen model (GEM_PIX) |
-| `nanobananapro` | Enhanced Imagen model (GEM_PIX_2) |
+```typescript
+type CreditStatusResult = {
+  credits: number;
+  userPaygateTier: string;
+  g1MembershipState: string;
+  isUserAnimateCountryEnabled: boolean;
+  isGemPix2CreditAvailable?: boolean;
+};
+```
 
 ## Aspect Ratios
 
-| Ratio | Description |
-|-------|-------------|
-| `16:9` | Landscape (default) |
-| `9:16` | Portrait |
-| `1:1` | Square |
+All image generation supports three aspect ratios:
 
-## Error Handling
-
-```typescript
-import { GLabsError } from '@getvrex/glabs-sdk';
-
-try {
-  const result = await client.images.generate({
-    prompt: 'test',
-    sessionId: GLabsClient.generateSessionId(),
-    aspectRatio: '16:9',
-  });
-} catch (error) {
-  if (error instanceof GLabsError) {
-    switch (error.code) {
-      case 'INVALID_ARGUMENT':
-        console.error('Content violates policy');
-        break;
-      case 'HIGH_TRAFFIC':
-        console.error('Service busy, try again later');
-        break;
-      case 'RECAPTCHA_REQUIRED':
-        console.error('Configure reCAPTCHA provider');
-        break;
-      case 'RECAPTCHA_EVAL_FAILED':
-        console.error('reCAPTCHA evaluation failed after retries');
-        break;
-      default:
-        console.error('Error:', error.message);
-    }
-  }
-}
-```
+| Ratio | Orientation | Use Case |
+|-------|-------------|----------|
+| `16:9` | Landscape | Desktop wallpapers, videos |
+| `9:16` | Portrait | Mobile wallpapers, stories |
+| `1:1` | Square | Social media, avatars |

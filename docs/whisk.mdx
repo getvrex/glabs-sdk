@@ -1,0 +1,90 @@
+---
+title: Whisk Service
+description: Standalone image generation via Google Labs Whisk API
+---
+
+# Whisk Service
+
+The `WhiskService` is a standalone service for image generation via Google Labs Whisk API (Imagen 3.5). It's independent from the main `GLabsClient` and manages its own authentication.
+
+## Quick Start
+
+```typescript
+import { WhiskService } from '@getvrex/glabs-sdk';
+
+const whisk = new WhiskService(
+  'your-full-cookie-string',  // cookies from labs.google
+  'optional-bearer-token',     // optional, will be auto-refreshed
+);
+
+const result = await whisk.generateImage('A cute robot holding flowers', {
+  aspectRatio: 'SQUARE',
+  seed: 42,
+});
+
+console.log('Base64:', result.base64.slice(0, 50) + '...');
+console.log('Media Gen ID:', result.mediaGenerationId);
+console.log('Workflow ID:', result.workflowId);
+```
+
+## Constructor
+
+```typescript
+const whisk = new WhiskService(cookie: string, authToken?: string);
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `cookie` | `string` | Yes | Full cookie string from `labs.google` |
+| `authToken` | `string` | No | Bearer token (auto-refreshed from cookie if not provided) |
+
+## generateImage()
+
+```typescript
+const result = await whisk.generateImage(prompt: string, options?: WhiskGenerateOptions);
+```
+
+### Options
+
+```typescript
+type WhiskGenerateOptions = {
+  aspectRatio?: 'SQUARE' | 'PORTRAIT' | 'LANDSCAPE';  // default: 'SQUARE'
+  seed?: number;  // default: 0
+};
+```
+
+### Result
+
+```typescript
+type WhiskGenerateResult = {
+  base64: string;              // Base64-encoded image
+  mediaGenerationId: string;   // Generation tracking ID
+  workflowId: string;          // Workflow tracking ID
+};
+```
+
+## Authentication
+
+The Whisk service manages its own auth token lifecycle:
+
+1. If `authToken` is provided in the constructor, uses it (assumed valid for 3 hours)
+2. When the token expires or is missing, auto-refreshes using the cookie against `labs.google/fx/api/auth/session`
+3. Also creates workflow IDs via the tRPC API, falling back to client-side UUIDs
+
+## Differences from GLabsClient
+
+| Feature | GLabsClient | WhiskService |
+|---------|-------------|-------------|
+| Model | Imagen 4 | Imagen 3.5 |
+| Auth | Bearer token + session token | Cookie string |
+| reCAPTCHA | Required | Not required |
+| Video generation | Yes | No |
+| Token refresh | Via TokenManager | Built-in |
+| Project management | Yes | No |
+
+## When to Use Whisk
+
+- You need Imagen 3.5 specifically
+- You have the full cookie string but not a bearer token
+- You don't need reCAPTCHA solving
+- You want a simpler, standalone image generation service

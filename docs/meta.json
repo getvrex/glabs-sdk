@@ -6,8 +6,13 @@
     "client",
     "image-generation",
     "video-generation",
+    "project-management",
     "recaptcha",
+    "openai-server",
     "tier-config",
+    "token-management",
+    "whisk",
+    "error-handling",
     "api-reference"
   ]
 }

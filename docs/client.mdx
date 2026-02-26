@@ -1,165 +1,203 @@
 ---
 title: Client Configuration
-description: Configure the GLabs client for your needs
+description: Configure the GLabsClient for your needs
 ---
 
 # Client Configuration
 
-The `GLabsClient` is the main entry point for interacting with Google Labs APIs.
+The `GLabsClient` is the main entry point for all SDK operations.
 
-## Constructor Options
+## Constructor
 
 ```typescript
-interface GLabsClientConfig {
-  // Required
-  bearerToken: string;
+import { GLabsClient } from '@getvrex/glabs-sdk';
 
-  // Optional
-  accountTier?: 'pro' | 'ultra';      // Default: 'pro'
-  projectId?: string;                  // Can be provided per-request
-  recaptcha?: RecaptchaConfig;         // Required for video generation
-  logger?: GLabsLogger;                // Default: console
-  timeout?: number;                    // Default: 120000 (2 minutes)
-  maxRetries?: number;                 // Default: 2
-  retryDelay?: number;                 // Default: 1500 (1.5 seconds)
-}
+const client = new GLabsClient({
+  bearerToken: 'your-token',
+  sessionToken: 'your-session-token',
+  accountTier: 'pro',
+  projectId: 'your-project-id',
+  recaptcha: { provider: 'regotcha', apiKey: 'key' },
+  timeout: 120000,
+  maxRetries: 2,
+  retryDelay: 1500,
+  logger: console,
+});
 ```
 
-## Account Tiers
+## Configuration Options
 
-The SDK supports two account tiers with different capabilities:
+```typescript
+type GLabsClientConfig = {
+  bearerToken: string;         // Required: auth token for Google Labs APIs
+  sessionToken?: string;       // Session token for auto token refresh (ST→AT)
+  accountTier?: AccountTier;   // 'pro' | 'ultra' (default: 'pro')
+  projectId?: string;          // Default project ID (auto-resolved if omitted)
+  recaptcha?: RecaptchaConfig; // reCAPTCHA provider config
+  logger?: GLabsLogger;        // Custom logger (default: console)
+  timeout?: number;            // Request timeout ms (default: 120000)
+  maxRetries?: number;         // Network error retries (default: 2)
+  retryDelay?: number;         // Retry delay ms (default: 1500)
+};
+```
+
+### bearerToken
+
+Required. The Google Labs API access token. Used for all image and video generation requests.
+
+If you also provide `sessionToken`, the SDK will automatically refresh `bearerToken` when it expires or approaches expiration.
+
+### sessionToken
+
+The `__Secure-next-auth.session-token` cookie value from `labs.google`. When provided:
+
+- SDK proactively refreshes bearer token 1 hour before expiry
+- On 401 responses, SDK auto-refreshes and retries the request once
+- Enables `client.refreshToken()` for manual refresh
+
+See [Token Management](/docs/glabs-sdk/token-management) for details.
+
+### accountTier
+
+Controls which video models and features are used:
 
 | Feature | Pro | Ultra |
 |---------|-----|-------|
+| Default Video Mode | `fast` | `quality` |
 | Video Modes | quality, fast | quality, fast |
-| Default Video Mode | fast | quality |
-| HD Upscaling | Yes | Yes |
+| HD/4K Upscaling | Yes | Yes |
 | Max Images Per Batch | 4 | 4 |
+| PaygateTier | `PAYGATE_TIER_ONE` | `PAYGATE_TIER_TWO` |
+| Ultra Models | No | Yes (fast mode) |
 
 ```typescript
-// Pro account
-const proClient = new GLabsClient({
-  bearerToken: 'token',
-  accountTier: 'pro',
-});
+// Pro: uses standard Veo 3.1 models
+const proClient = new GLabsClient({ bearerToken: 'token', accountTier: 'pro' });
 
-// Ultra account
-const ultraClient = new GLabsClient({
-  bearerToken: 'token',
-  accountTier: 'ultra',
-});
+// Ultra: uses _ultra model variants in fast mode
+const ultraClient = new GLabsClient({ bearerToken: 'token', accountTier: 'ultra' });
 ```
 
-## reCAPTCHA Configuration
+### projectId
 
-Video generation requires reCAPTCHA verification. The SDK supports two providers:
+Optional default project ID for generation requests. If omitted, the SDK auto-resolves by fetching your first available project via the Project API (requires `sessionToken`).
 
-### YesCaptcha
+Auto-resolution priority:
+1. `projectId` passed in the method call
+2. `projectId` from client config
+3. First project from `projects.getFirstProjectId()` (cached)
+
+### recaptcha
+
+Required for image and video generation. See [reCAPTCHA Configuration](/docs/glabs-sdk/recaptcha).
+
+## Client Properties
 
 ```typescript
-const client = new GLabsClient({
-  bearerToken: 'token',
-  recaptcha: {
-    provider: 'yescaptcha',
-    apiKey: 'your-yescaptcha-api-key',
-    maxRetries: 20, // Optional: max polling attempts
-  },
-});
+client.accountTier;  // 'pro' | 'ultra'
+client.projectId;    // string | undefined
 ```
 
-### CapSolver
+## Client Methods
+
+### refreshToken()
+
+Manually refresh the bearer token using the session token.
 
 ```typescript
-const client = new GLabsClient({
-  bearerToken: 'token',
-  recaptcha: {
-    provider: 'capsolver',
-    apiKey: 'your-capsolver-api-key',
-    proxy: 'http://user:pass@ip:port', // Optional: proxy for CapSolver
-    maxRetries: 30, // Optional: max polling attempts
-  },
-});
+await client.refreshToken();
 ```
+
+Throws `GLabsError` if no `sessionToken` is configured.
+
+### close()
+
+Close persistent resources (e.g., Chrome browser for reCAPTCHA). Call this when you're done with the client.
+
+```typescript
+await client.close();
+```
+
+### generateSessionId() (static)
+
+Generate a session ID in Google's expected format.
+
+```typescript
+const sessionId = GLabsClient.generateSessionId();
+// Returns: ";1709123456789"
+```
+
+## Service Namespaces
+
+The client exposes four service namespaces:
+
+| Namespace | Methods |
+|-----------|---------|
+| `client.projects` | `list()`, `get()`, `getFirstProjectId()`, `clearCache()` |
+| `client.images` | `generate()`, `upload()`, `upsampleImage()`, `getCreditStatus()` |
+| `client.videos` | `generateTextToVideo()`, `generateImageToVideo()`, `generateReferenceImagesVideo()`, `extend()`, `reshoot()`, `upsample()`, `checkStatus()`, `pollOperation()` |
+
+All generation methods automatically:
+- Refresh the bearer token if `sessionToken` is configured
+- Retry once on 401 after refreshing
+- Resolve `projectId` if not provided
 
 ## Custom Logger
 
-You can provide a custom logger that implements the `GLabsLogger` interface:
-
 ```typescript
-interface GLabsLogger {
+type GLabsLogger = {
   log: (message: string, ...args: unknown[]) => void;
   warn: (message: string, ...args: unknown[]) => void;
   error: (message: string, ...args: unknown[]) => void;
-}
+};
 ```
 
-Example with a custom logger:
+### Custom logger example
 
 ```typescript
-const customLogger = {
-  log: (msg, ...args) => console.log(`[GLabs] ${msg}`, ...args),
-  warn: (msg, ...args) => console.warn(`[GLabs] ${msg}`, ...args),
-  error: (msg, ...args) => console.error(`[GLabs] ${msg}`, ...args),
-};
-
 const client = new GLabsClient({
   bearerToken: 'token',
-  logger: customLogger,
+  logger: {
+    log: (msg, ...args) => console.log(`[GLabs] ${msg}`, ...args),
+    warn: (msg, ...args) => console.warn(`[GLabs] ${msg}`, ...args),
+    error: (msg, ...args) => console.error(`[GLabs] ${msg}`, ...args),
+  },
 });
 ```
 
-## Silent Mode
-
-To disable logging:
+### Silent mode
 
 ```typescript
-const silentLogger = {
-  log: () => {},
-  warn: () => {},
-  error: () => {},
-};
-
 const client = new GLabsClient({
   bearerToken: 'token',
-  logger: silentLogger,
+  logger: { log: () => {}, warn: () => {}, error: () => {} },
 });
 ```
 
 ## Retry Configuration
 
-The SDK automatically retries on network errors:
+The SDK automatically retries on network errors (fetch failures, timeouts, connection refused):
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'token',
-  maxRetries: 3,      // Number of retry attempts
-  retryDelay: 2000,   // Delay between retries in ms
-  timeout: 180000,    // Request timeout in ms
+  maxRetries: 3,      // retry attempts (default: 2)
+  retryDelay: 2000,   // delay between retries in ms (default: 1500)
+  timeout: 180000,    // request timeout in ms (default: 120000)
 });
 ```
 
-## Client Properties
+## Package Exports
 
-Access client configuration:
-
-```typescript
-const client = new GLabsClient({
-  bearerToken: 'token',
-  accountTier: 'ultra',
-  projectId: 'my-project',
-});
-
-console.log(client.accountTier);  // 'ultra'
-console.log(client.projectId);    // 'my-project'
-```
-
-## Static Methods
-
-### generateSessionId
-
-Generate a unique session ID for API requests:
+The SDK provides three entry points:
 
 ```typescript
-const sessionId = GLabsClient.generateSessionId();
-// Example: '550e8400-e29b-41d4-a716-446655440000'
+// Main client and all exports
+import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
+
+// Types only
+import type { AccountTier, GenerateImageOptions } from '@getvrex/glabs-sdk/types';
+
+// OpenAI-compatible server
+import { OpenAIServer } from '@getvrex/glabs-sdk/openai';
 ```

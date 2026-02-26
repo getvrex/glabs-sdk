@@ -1,0 +1,195 @@
+---
+title: OpenAI-Compatible Server
+description: Drop-in OpenAI API server for image and video generation
+---
+
+# OpenAI-Compatible Server
+
+The SDK includes a built-in HTTP server that exposes Google Labs generation behind standard OpenAI API endpoints. Works with any OpenAI-compatible client (Cursor, Continue, LangChain, etc.).
+
+## Quick Start
+
+```typescript
+import { GLabsClient } from '@getvrex/glabs-sdk';
+import { OpenAIServer } from '@getvrex/glabs-sdk/openai';
+
+const client = new GLabsClient({
+  bearerToken: process.env.GLABS_BEARER_TOKEN!,
+  sessionToken: process.env.GLABS_SESSION_TOKEN,
+  accountTier: 'pro',
+  recaptcha: { provider: 'chrome' },
+});
+
+const server = new OpenAIServer(client, {
+  port: 8000,
+  apiKey: 'sk-my-secret-key', // optional auth
+});
+
+await server.start();
+// [OpenAI Server] Listening on http://0.0.0.0:8000
+// [OpenAI Server] Endpoints:
+//   POST /v1/chat/completions
+//   GET  /v1/models
+```
+
+## Endpoints
+
+### POST /v1/chat/completions
+
+Standard OpenAI chat completion endpoint. Supports both streaming and non-streaming modes.
+
+```bash
+# Non-streaming image generation
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-my-secret-key" \
+  -d '{
+    "model": "imagen-4-landscape",
+    "messages": [{"role": "user", "content": "A sunset over mountains"}]
+  }'
+
+# Streaming text-to-video
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-my-secret-key" \
+  -d '{
+    "model": "veo-3-t2v-landscape",
+    "messages": [{"role": "user", "content": "A cinematic drone shot"}],
+    "stream": true
+  }'
+```
+
+### GET /v1/models
+
+List available models:
+
+```bash
+curl http://localhost:8000/v1/models \
+  -H "Authorization: Bearer sk-my-secret-key"
+```
+
+## Available Models
+
+### Image Models
+
+| Model ID | Aspect Ratio | Description |
+|----------|-------------|-------------|
+| `imagen-4-landscape` | 16:9 | Imagen 4 Landscape |
+| `imagen-4-portrait` | 9:16 | Imagen 4 Portrait |
+| `imagen-4-square` | 1:1 | Imagen 4 Square |
+
+### Video Text-to-Video Models
+
+| Model ID | Aspect Ratio | Description |
+|----------|-------------|-------------|
+| `veo-3-t2v-landscape` | 16:9 | Veo 3 T2V Landscape |
+| `veo-3-t2v-portrait` | 9:16 | Veo 3 T2V Portrait |
+| `veo-3-t2v-square` | 1:1 | Veo 3 T2V Square |
+
+### Video Image-to-Video Models
+
+| Model ID | Aspect Ratio | Description |
+|----------|-------------|-------------|
+| `veo-3-i2v-landscape` | 16:9 | Veo 3 I2V Landscape |
+| `veo-3-i2v-portrait` | 9:16 | Veo 3 I2V Portrait |
+| `veo-3-i2v-square` | 1:1 | Veo 3 I2V Square |
+
+## Image-to-Video via OpenAI Format
+
+Send images as base64 data URLs in the message content:
+
+```bash
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-my-secret-key" \
+  -d '{
+    "model": "veo-3-i2v-landscape",
+    "messages": [{
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Camera pans slowly across the scene"},
+        {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,/9j/4AAQ..."}}
+      ]
+    }]
+  }'
+```
+
+The server automatically:
+1. Extracts the base64 image from the multimodal message
+2. Uploads it via `client.images.upload()`
+3. Starts image-to-video generation
+4. Polls until completion
+5. Returns the video URL
+
+## Server Configuration
+
+```typescript
+type OpenAIServerConfig = {
+  apiKey?: string;  // Auth key (checked against Authorization: Bearer <key>)
+  host?: string;    // Bind host (default: '0.0.0.0')
+  port?: number;    // Listen port (default: 8000)
+};
+```
+
+## Response Format
+
+### Non-Streaming
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1709123456,
+  "model": "imagen-4-landscape",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "![Generated Image 1](data:image/png;base64,...)"
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": { "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0 }
+}
+```
+
+Image responses contain markdown image tags with base64 data or CDN URLs.
+Video responses contain the video URL as text.
+
+### Streaming (SSE)
+
+Standard OpenAI SSE format with `data:` prefixed JSON chunks, ending with `data: [DONE]`.
+
+## Authentication
+
+If `apiKey` is set, all requests must include `Authorization: Bearer <apiKey>`.
+If no `apiKey` is set, all requests are accepted.
+
+## Stop the Server
+
+```typescript
+await server.stop();
+```
+
+## Usage with OpenAI SDK
+
+```typescript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  baseURL: 'http://localhost:8000/v1',
+  apiKey: 'sk-my-secret-key',
+});
+
+// Generate an image
+const response = await openai.chat.completions.create({
+  model: 'imagen-4-landscape',
+  messages: [{ role: 'user', content: 'A serene mountain lake at dawn' }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## CORS
+
+The server includes CORS headers allowing all origins. Suitable for browser-based clients.

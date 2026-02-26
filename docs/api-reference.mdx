@@ -1,106 +1,195 @@
 ---
 title: API Reference
-description: Complete API reference for the GLabs SDK
+description: Complete API reference for @getvrex/glabs-sdk
 ---
 
 # API Reference
 
 Complete reference for all exports from `@getvrex/glabs-sdk`.
 
-## GLabsClient
+## Classes
 
-Main client class for interacting with Google Labs APIs.
+### GLabsClient
 
-### Constructor
+Main SDK client. See [Client Configuration](/docs/glabs-sdk/client).
 
 ```typescript
-new GLabsClient(config: GLabsClientConfig)
+import { GLabsClient } from '@getvrex/glabs-sdk';
+
+const client = new GLabsClient(config: GLabsClientConfig);
 ```
 
-### Properties
+**Properties:**
+- `accountTier: AccountTier` — configured account tier
+- `projectId: string | undefined` — configured project ID
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `accountTier` | `AccountTier` | Configured account tier |
-| `projectId` | `string \| undefined` | Configured project ID |
+**Methods:**
+- `refreshToken(): Promise<void>` — manual token refresh
+- `close(): Promise<void>` — close persistent resources
 
-### Static Methods
+**Static Methods:**
+- `GLabsClient.generateSessionId(): string` — generate session ID
+
+**Namespaces:**
+- `client.projects` — project management
+- `client.images` — image generation
+- `client.videos` — video generation
+
+### OpenAIServer
+
+OpenAI-compatible HTTP server. See [OpenAI Server](/docs/glabs-sdk/openai-server).
+
+```typescript
+import { OpenAIServer } from '@getvrex/glabs-sdk/openai';
+
+const server = new OpenAIServer(client: GLabsClient, config?: OpenAIServerConfig);
+await server.start();
+await server.stop();
+```
+
+### Services (Advanced)
+
+For direct service usage without the client facade:
+
+```typescript
+import {
+  ImageService,
+  VideoService,
+  RecaptchaService,
+  ChromeRecaptchaService,
+  PlaywrightRecaptchaService,
+  OpenAICompatService,
+  WhiskService,
+} from '@getvrex/glabs-sdk';
+```
+
+## client.projects
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `generateSessionId()` | `string` | Generate a unique session ID |
+| `list(options?)` | `Promise<ListProjectsResult>` | List projects with pagination |
+| `get(options)` | `Promise<GetProjectResult>` | Get project by ID |
+| `getFirstProjectId()` | `Promise<string>` | Get first project (cached) |
+| `clearCache()` | `void` | Clear project cache |
 
-### Instance Methods
+## client.images
 
-#### images.getCreditStatus()
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `generate(options)` | `Promise<GenerateImageResult>` | Generate images from prompt |
+| `upload(options)` | `Promise<UploadImageResult>` | Upload image for video gen |
+| `upsampleImage(options)` | `Promise<UpsampleImageResult>` | Upscale image to 2K/4K |
+| `getCreditStatus()` | `Promise<CreditStatusResult>` | Check account credits |
 
-```typescript
-getCreditStatus(): Promise<CreditStatusResult>
-```
+## client.videos
 
-#### images.upload()
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `generateTextToVideo(options)` | `Promise<VideoOperationResult>` | Text-to-video generation |
+| `generateImageToVideo(options)` | `Promise<VideoOperationResult>` | Image-to-video (start/end frame) |
+| `generateReferenceImagesVideo(options)` | `Promise<VideoOperationResult>` | Reference images video |
+| `extend(options)` | `Promise<VideoOperationResult>` | Extend existing video |
+| `reshoot(options)` | `Promise<VideoOperationResult>` | Camera control reshoot |
+| `upsample(options)` | `Promise<VideoOperationResult>` | Upscale to HD/4K |
+| `checkStatus(options)` | `Promise<VideoStatusResult>` | Check generation status |
+| `pollOperation(options)` | `Promise<VideoStatusResult>` | Poll until completion |
 
-```typescript
-upload(options: UploadImageOptions): Promise<UploadImageResult>
-```
-
-#### images.generate()
-
-```typescript
-generate(options: GenerateImageOptions): Promise<GenerateImageResult>
-```
-
-#### videos.generateTextToVideo()
-
-```typescript
-generateTextToVideo(options: GenerateTextToVideoOptions): Promise<VideoOperationResult>
-```
-
-#### videos.generateImageToVideo()
-
-```typescript
-generateImageToVideo(options: GenerateImageToVideoOptions): Promise<VideoOperationResult>
-```
-
-#### videos.extend()
+## Tier Configuration Functions
 
 ```typescript
-extend(options: ExtendVideoOptions): Promise<VideoOperationResult>
+import {
+  getTierCapabilities,
+  getEffectiveVideoMode,
+  getPaygateTier,
+  getVideoAspectRatioEnum,
+  getImageAspectRatioEnum,
+  getVideoModelKey,
+  getVideoApiConfig,
+  getImageApiConfig,
+  isFeatureSupported,
+} from '@getvrex/glabs-sdk';
 ```
 
-#### videos.reshoot()
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `getTierCapabilities(tier)` | `TierCapabilities` | Get tier capabilities |
+| `getEffectiveVideoMode(tier, mode?)` | `VideoMode` | Get effective video mode |
+| `getPaygateTier(tier)` | `PaygateTier` | Get paygate tier enum |
+| `getVideoAspectRatioEnum(ratio)` | `VideoAspectRatioEnum` | Video aspect ratio enum |
+| `getImageAspectRatioEnum(ratio)` | `ImageAspectRatioEnum` | Image aspect ratio enum |
+| `getVideoModelKey(type, tier, ratio, mode?)` | `string` | Video model key |
+| `getVideoApiConfig(type, tier, ratio, mode?)` | `VideoApiConfig` | Full video API config |
+| `getImageApiConfig(tier, ratio, model?)` | `ImageApiConfig` | Full image API config |
+| `isFeatureSupported(feature, tier, ratio?)` | `FeatureSupportResult` | Check feature support |
+
+## Error Class
 
 ```typescript
-reshoot(options: ReshootVideoOptions): Promise<VideoOperationResult>
+import { GLabsError } from '@getvrex/glabs-sdk';
 ```
 
-#### videos.upsample()
-
-```typescript
-upsample(options: UpsampleVideoOptions): Promise<VideoOperationResult>
-```
-
-#### videos.generateReferenceImagesVideo()
-
-```typescript
-generateReferenceImagesVideo(options: GenerateReferenceImagesVideoOptions): Promise<VideoOperationResult>
-```
-
-#### videos.checkStatus()
-
-```typescript
-checkStatus(options: CheckVideoStatusOptions): Promise<VideoStatusResult>
-```
-
----
+See [Error Handling](/docs/glabs-sdk/error-handling).
 
 ## Types
 
-### GLabsClientConfig
+All types are available from the main package or the `/types` subpath:
 
 ```typescript
-interface GLabsClientConfig {
+import type { AccountTier, GenerateImageOptions } from '@getvrex/glabs-sdk';
+// or
+import type { AccountTier, GenerateImageOptions } from '@getvrex/glabs-sdk/types';
+```
+
+### Common Types
+
+```typescript
+type AccountTier = 'pro' | 'ultra';
+type VideoMode = 'quality' | 'fast';
+type AspectRatio = '16:9' | '9:16' | '1:1';
+type ImageModel = 'nanobanana' | 'nanobananapro' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra';
+type VideoGenerationType = 'text-to-video' | 'image-to-video' | 'image-to-video-fl' | 'extend' | 'reshoot' | 'upsample' | 'reference-images';
+type PaygateTier = 'PAYGATE_TIER_ONE' | 'PAYGATE_TIER_TWO';
+type VideoResolution = 'VIDEO_RESOLUTION_1080P' | 'VIDEO_RESOLUTION_4K';
+type VideoStatus = 'MEDIA_GENERATION_STATUS_PENDING' | 'MEDIA_GENERATION_STATUS_ACTIVE' | 'MEDIA_GENERATION_STATUS_PROCESSING' | 'MEDIA_GENERATION_STATUS_COMPLETED' | 'MEDIA_GENERATION_STATUS_SUCCESSFUL' | 'MEDIA_GENERATION_STATUS_FAILED' | 'UNKNOWN';
+type RecaptchaProvider = 'chrome' | 'playwright' | 'yescaptcha' | 'capsolver' | 'regotcha' | 'veo3solver' | 'custom';
+type SupportedFeature = 'upsample' | 'quality_mode' | 'extend' | 'reshoot' | 'reference_images';
+```
+
+### Camera Control Types
+
+```typescript
+type ReshootMotionType =
+  // Camera Movement
+  | 'RESHOOT_MOTION_TYPE_UP'
+  | 'RESHOOT_MOTION_TYPE_DOWN'
+  | 'RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT'
+  | 'RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT'
+  | 'RESHOOT_MOTION_TYPE_FORWARD'
+  | 'RESHOOT_MOTION_TYPE_BACKWARD'
+  | 'RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT'
+  | 'RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE'
+  // Camera Position
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_UP'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOWN'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT'
+  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE';
+```
+
+### Aspect Ratio Enums
+
+```typescript
+type VideoAspectRatioEnum = 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_SQUARE';
+type ImageAspectRatioEnum = 'IMAGE_ASPECT_RATIO_LANDSCAPE' | 'IMAGE_ASPECT_RATIO_PORTRAIT' | 'IMAGE_ASPECT_RATIO_SQUARE';
+```
+
+### Client Types
+
+```typescript
+type GLabsClientConfig = {
   bearerToken: string;
+  sessionToken?: string;
   accountTier?: AccountTier;
   projectId?: string;
   recaptcha?: RecaptchaConfig;
@@ -108,47 +197,75 @@ interface GLabsClientConfig {
   timeout?: number;
   maxRetries?: number;
   retryDelay?: number;
-}
+};
+
+type GLabsLogger = {
+  log: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+};
+
+type SessionInfo = {
+  sessionId: string;
+  projectId?: string;
+};
+
+type ClientContext = {
+  sessionId: string;
+  projectId?: string;
+  tool?: string;
+  recaptchaToken?: string;
+  userPaygateTier?: PaygateTier;
+};
 ```
 
-### RecaptchaConfig
+### reCAPTCHA Types
 
 ```typescript
-interface RecaptchaConfig {
-  provider: 'yescaptcha' | 'capsolver';
-  apiKey: string;
+type RecaptchaConfig = {
+  provider: RecaptchaProvider;
+  apiKey?: string;
   proxy?: string;
   maxRetries?: number;
-}
+  customEndpoint?: string;
+  anchor?: string;
+  reload?: string;
+  jwtToken?: string;
+  staticToken?: string;
+  pageAction?: string;
+  playwrightOptions?: PlaywrightRecaptchaOptions;
+  chromeOptions?: ChromeRecaptchaOptions;
+  fallback?: RecaptchaConfig;
+};
+
+type PlaywrightRecaptchaOptions = {
+  headless?: boolean;
+  proxy?: { server: string; username?: string; password?: string };
+  projectId?: string;
+  maxRetries?: number;
+  timeout?: number;
+};
+
+type ChromeRecaptchaOptions = {
+  headless?: boolean;
+  proxy?: { server: string; username?: string; password?: string };
+  projectId?: string;
+  maxRetries?: number;
+  timeout?: number;
+  userDataDir?: string;
+};
+
+type RecaptchaTokenResult = {
+  token: string;
+  userAgent?: string;
+  secChUa?: string;
+};
 ```
 
-### UploadImageOptions
+### Image Types
 
 ```typescript
-interface UploadImageOptions {
-  imageBase64: string;
-  sessionId: string;
-  aspectRatio?: AspectRatio;
-}
-```
-
-### UploadImageResult
-
-```typescript
-interface UploadImageResult {
-  mediaGenerationId?: string;
-  mediaId?: string;
-  width?: number;
-  height?: number;
-  workflowId?: string;
-  sessionId: string;
-}
-```
-
-### GenerateImageOptions
-
-```typescript
-interface GenerateImageOptions {
+type GenerateImageOptions = {
   prompt: string;
   projectId: string;
   sessionId: string;
@@ -158,22 +275,14 @@ interface GenerateImageOptions {
   count?: number;
   model?: ImageModel;
   prompts?: string[];
-}
-```
+};
 
-### GenerateImageResult
-
-```typescript
-interface GenerateImageResult {
+type GenerateImageResult = {
   images: GeneratedImage[];
   sessionId: string;
-}
-```
+};
 
-### GeneratedImage
-
-```typescript
-interface GeneratedImage {
+type GeneratedImage = {
   encodedImage?: string;
   mediaId?: string;
   mediaGenerationId?: string;
@@ -182,38 +291,55 @@ interface GeneratedImage {
   seed?: number;
   mimeType?: string;
   fifeUrl?: string;
-}
-```
+};
 
-### VideoOperationResult
-
-```typescript
-interface VideoOperationResult {
-  operationName: string;
-  sceneId: string;
-  status: string;
-  remainingCredits?: number;
-}
-```
-
-### VideoStatusResult
-
-```typescript
-interface VideoStatusResult {
-  status: string;
-  videoUrl?: string;
-  thumbnailUrl?: string;
-  duration?: number;
+type ImageReference = {
+  mediaId?: string;
   mediaGenerationId?: string;
-  error?: string;
-  remainingCredits?: number;
-}
+};
+
+type UploadImageOptions = {
+  imageBase64: string;
+  sessionId: string;
+  aspectRatio?: AspectRatio;
+  projectId?: string;
+  fileName?: string;
+  mimeType?: string;
+};
+
+type UploadImageResult = {
+  mediaGenerationId?: string;
+  mediaId?: string;
+  width?: number;
+  height?: number;
+  workflowId?: string;
+  sessionId: string;
+};
+
+type UpsampleImageOptions = {
+  mediaId: string;
+  targetResolution?: 'UPSAMPLE_IMAGE_RESOLUTION_2K' | 'UPSAMPLE_IMAGE_RESOLUTION_4K';
+  projectId?: string;
+  sessionId?: string;
+};
+
+type UpsampleImageResult = {
+  encodedImage: string;
+};
+
+type CreditStatusResult = {
+  credits: number;
+  userPaygateTier: string;
+  g1MembershipState: string;
+  isUserAnimateCountryEnabled: boolean;
+  isGemPix2CreditAvailable?: boolean;
+};
 ```
 
-### GenerateTextToVideoOptions
+### Video Types
 
 ```typescript
-interface GenerateTextToVideoOptions {
+type GenerateTextToVideoOptions = {
   prompt: string;
   sessionId: string;
   projectId: string;
@@ -222,30 +348,35 @@ interface GenerateTextToVideoOptions {
   videoMode?: VideoMode;
   seed?: number;
   sceneId?: string;
-}
-```
+};
 
-### GenerateImageToVideoOptions
-
-```typescript
-interface GenerateImageToVideoOptions {
+type GenerateImageToVideoOptions = {
   prompt: string;
-  sessionId: string;
-  projectId: string;
-  aspectRatio: AspectRatio;
-  accountTier: AccountTier;
-  videoMode?: VideoMode;
   startMediaId: string;
+  sessionId: string;
+  projectId: string;
+  aspectRatio: AspectRatio;
+  accountTier: AccountTier;
   endMediaId?: string;
+  videoMode?: VideoMode;
   seed?: number;
   sceneId?: string;
-}
-```
+  cropCoordinates?: { top?: number; left?: number; bottom?: number; right?: number };
+};
 
-### ExtendVideoOptions
+type GenerateReferenceImagesVideoOptions = {
+  prompt: string;
+  referenceMediaIds: string[];
+  sessionId: string;
+  projectId: string;
+  aspectRatio: AspectRatio;
+  accountTier: AccountTier;
+  videoMode?: VideoMode;
+  seed?: number;
+  sceneId?: string;
+};
 
-```typescript
-interface ExtendVideoOptions {
+type ExtendVideoOptions = {
   mediaId: string;
   prompt: string;
   sessionId: string;
@@ -253,17 +384,12 @@ interface ExtendVideoOptions {
   aspectRatio: AspectRatio;
   accountTier: AccountTier;
   videoMode?: VideoMode;
-  startFrameIndex?: number;
-  endFrameIndex?: number;
   seed?: number;
   sceneId?: string;
-}
-```
+  workflowId?: string;
+};
 
-### ReshootVideoOptions
-
-```typescript
-interface ReshootVideoOptions {
+type ReshootVideoOptions = {
   mediaId: string;
   reshootMotionType: ReshootMotionType;
   sessionId: string;
@@ -272,195 +398,152 @@ interface ReshootVideoOptions {
   accountTier: AccountTier;
   seed?: number;
   sceneId?: string;
-}
-```
+  workflowId?: string;
+};
 
-### UpsampleVideoOptions
-
-```typescript
-interface UpsampleVideoOptions {
+type UpsampleVideoOptions = {
   originalMediaId: string;
   sessionId: string;
+  projectId: string;
+  accountTier: AccountTier;
   aspectRatio: AspectRatio;
   seed?: number;
   sceneId?: string;
-}
+  workflowId?: string;
+  resolution?: VideoResolution;
+};
+
+type VideoOperationResult = {
+  operationName: string;
+  sceneId: string;
+  mediaId?: string;
+  status: string;
+  remainingCredits?: number;
+};
+
+type CheckVideoStatusOptions = {
+  operationName?: string;
+  sceneId?: string;
+  mediaId?: string;
+  projectId?: string;
+};
+
+type PollOperationOptions = {
+  operationName?: string;
+  sceneId?: string;
+  mediaId?: string;
+  projectId?: string;
+  maxAttempts?: number;
+  intervalMs?: number;
+  onProgress?: (status: VideoStatusResult, attempt: number) => void;
+};
+
+type VideoStatusResult = {
+  status: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  mediaGenerationId?: string;
+  error?: string;
+  remainingCredits?: number;
+};
 ```
 
----
-
-## Enums and Type Aliases
-
-### AccountTier
+### Project Types
 
 ```typescript
-type AccountTier = 'pro' | 'ultra';
+type Project = {
+  projectId: string;
+  projectInfo: ProjectInfo;
+  creationTime: string;
+  scenes?: ProjectScene[];
+};
+
+type ProjectInfo = {
+  projectTitle: string;
+  thumbnailMediaKey?: string;
+};
+
+type ProjectScene = {
+  sceneId: string;
+  sceneName: string;
+  clips?: ProjectClip[];
+  createTime: string;
+};
+
+type ProjectClip = {
+  clipId: string;
+  startTime: string;
+  endTime: string;
+};
+
+type ListProjectsOptions = { pageSize?: number; cursor?: string };
+type ListProjectsResult = { projects: Project[]; nextCursor?: string };
+type GetProjectOptions = { projectId: string };
+type GetProjectResult = { projectId: string; projectInfo: ProjectInfo };
 ```
 
-### VideoMode
+### Tier Types
 
 ```typescript
-type VideoMode = 'quality' | 'fast';
+type TierCapabilities = {
+  supportedVideoModes: VideoMode[];
+  defaultVideoMode: VideoMode;
+  paygateTier: PaygateTier;
+  supportsUpsample: boolean;
+  supportsQualityMode: boolean;
+  maxImageGenerationCount: number;
+};
+
+type VideoApiConfig = {
+  videoModelKey: string;
+  userPaygateTier: PaygateTier;
+  effectiveVideoMode: VideoMode;
+  aspectRatioEnum: VideoAspectRatioEnum;
+};
+
+type ImageApiConfig = {
+  imageModelName: 'GEM_PIX' | 'GEM_PIX_2';
+  aspectRatioEnum: ImageAspectRatioEnum;
+};
+
+type FeatureSupportResult = {
+  supported: boolean;
+  reason?: string;
+};
 ```
 
-### AspectRatio
+### OpenAI-Compatible Types
 
 ```typescript
-type AspectRatio = '16:9' | '9:16' | '1:1';
+type OpenAIServerConfig = {
+  apiKey?: string;
+  host?: string;
+  port?: number;
+};
+
+type OpenAIChatCompletionRequest = {
+  model: string;
+  messages: OpenAIMessage[];
+  stream?: boolean;
+  temperature?: number;
+  max_tokens?: number;
+};
+
+type OpenAIMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string | OpenAIContentPart[];
+};
+
+type OpenAIContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: string } };
 ```
 
-### ImageModel
+## Package Exports
 
-```typescript
-type ImageModel = 'nanobanana' | 'nanobananapro';
-```
-
-### ReshootMotionType
-
-```typescript
-type ReshootMotionType =
-  | 'RESHOOT_MOTION_TYPE_UP'
-  | 'RESHOOT_MOTION_TYPE_DOWN'
-  | 'RESHOOT_MOTION_TYPE_LEFT_TO_RIGHT'
-  | 'RESHOOT_MOTION_TYPE_RIGHT_TO_LEFT'
-  | 'RESHOOT_MOTION_TYPE_FORWARD'
-  | 'RESHOOT_MOTION_TYPE_BACKWARD'
-  | 'RESHOOT_MOTION_TYPE_DOLLY_IN_ZOOM_OUT'
-  | 'RESHOOT_MOTION_TYPE_DOLLY_OUT_ZOOM_IN_LARGE'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_UP'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOWN'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_LEFT_LARGE'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_RIGHT_LARGE'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_IN_ZOOM_OUT'
-  | 'RESHOOT_MOTION_TYPE_STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE';
-```
-
----
-
-## Utility Functions
-
-### getTierCapabilities
-
-```typescript
-getTierCapabilities(tier: AccountTier): TierCapabilities
-```
-
-### getEffectiveVideoMode
-
-```typescript
-getEffectiveVideoMode(tier: AccountTier, requestedMode?: VideoMode): VideoMode
-```
-
-### getVideoApiConfig
-
-```typescript
-getVideoApiConfig(
-  type: VideoGenerationType,
-  tier: AccountTier,
-  aspectRatio: AspectRatio,
-  videoMode?: VideoMode
-): VideoApiConfig
-```
-
-### getImageApiConfig
-
-```typescript
-getImageApiConfig(
-  tier: AccountTier,
-  aspectRatio: AspectRatio,
-  model?: ImageModel
-): ImageApiConfig
-```
-
-### isFeatureSupported
-
-```typescript
-isFeatureSupported(
-  feature: SupportedFeature,
-  tier: AccountTier,
-  aspectRatio?: AspectRatio
-): FeatureSupportResult
-```
-
-### getVideoAspectRatioEnum
-
-```typescript
-getVideoAspectRatioEnum(aspectRatio: AspectRatio): VideoAspectRatioEnum
-```
-
-### getImageAspectRatioEnum
-
-```typescript
-getImageAspectRatioEnum(aspectRatio: AspectRatio): ImageAspectRatioEnum
-```
-
-### getVideoModelKey
-
-```typescript
-getVideoModelKey(
-  type: VideoGenerationType,
-  tier: AccountTier,
-  aspectRatio: AspectRatio,
-  videoMode?: VideoMode
-): string
-```
-
-### getPaygateTier
-
-```typescript
-getPaygateTier(tier: AccountTier): PaygateTier
-```
-
----
-
-## Error Class
-
-### GLabsError
-
-```typescript
-class GLabsError extends Error {
-  constructor(
-    message: string,
-    code?: string,
-    statusCode?: number,
-    cause?: unknown
-  );
-
-  readonly code: string;
-  readonly statusCode?: number;
-  readonly cause?: unknown;
-
-  toJSON(): object;
-}
-```
-
-### Error Codes
-
-| Code | Description |
-|------|-------------|
-| `NETWORK_ERROR` | Network request failed |
-| `HIGH_TRAFFIC` | Service is busy |
-| `INTERNAL_ERROR` | Server-side error |
-| `INVALID_ARGUMENT` | Content violates policy |
-| `PERMISSION_DENIED` | Authentication failed |
-| `RECAPTCHA_REQUIRED` | reCAPTCHA not configured |
-| `RECAPTCHA_TIMEOUT` | Token request timed out |
-| `RECAPTCHA_FAILED` | Token request failed |
-| `PARSE_ERROR` | Response parsing failed |
-| `UNKNOWN` | Unknown error |
-
----
-
-## Services (Advanced)
-
-For advanced use cases, you can use the services directly:
-
-```typescript
-import {
-  ImageService,
-  VideoService,
-  RecaptchaService,
-} from '@getvrex/glabs-sdk';
-```
-
-These are used internally by `GLabsClient` and are exported for special cases where you need direct access.
+| Entry Point | Import Path | Description |
+|-------------|------------|-------------|
+| Main | `@getvrex/glabs-sdk` | Client, services, types, errors, tier config |
+| Types | `@getvrex/glabs-sdk/types` | Type-only exports |
+| OpenAI | `@getvrex/glabs-sdk/openai` | OpenAI-compatible server |
