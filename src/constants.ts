@@ -78,7 +78,7 @@ export const DEFAULTS = {
   RECAPTCHA_EVAL_MAX_RETRIES: 20,
   VIDEO_EXTEND_START_FRAME: 168,
   VIDEO_EXTEND_END_FRAME: 191,
-  VIDEO_UPSAMPLE_MODEL: "veo_3_1_upsampler_4k",
+  VIDEO_UPSAMPLE_MODEL: "veo_3_1_upsampler_1080p",
 } as const;
 
 /** Error codes */

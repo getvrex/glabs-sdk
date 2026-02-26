@@ -45,6 +45,7 @@ import {
   ImageService,
   ProjectService,
   RecaptchaService,
+  TokenManager,
   VertexImageService,
   VertexVideoService,
   VideoService,
@@ -54,6 +55,7 @@ import type {
   GLabsLogger,
   ResolvedConfig,
 } from "./types/client";
+import { GLabsError } from "./utils";
 import type { AccountTier, AspectRatio } from "./types/common";
 import type {
   CreditStatusResult,
@@ -97,6 +99,7 @@ const defaultLogger: GLabsLogger = {
  */
 export class GLabsClient {
   private readonly config: ResolvedConfig;
+  private readonly tokenManager: TokenManager;
   private readonly recaptchaService: RecaptchaService;
   private readonly imageService: ImageService;
   private readonly vertexImageService?: VertexImageService;
@@ -109,6 +112,7 @@ export class GLabsClient {
    */
   constructor(config: GLabsClientConfig) {
     this.config = this.resolveConfig(config);
+    this.tokenManager = new TokenManager(this.config);
     this.recaptchaService = new RecaptchaService({
       logger: this.config.logger,
     });
@@ -156,6 +160,39 @@ export class GLabsClient {
    */
   static generateSessionId(): string {
     return `";${Date.now()}"`;
+  }
+
+  /**
+   * Execute a function with automatic token refresh.
+   * Ensures token is valid before the call, and retries once on 401.
+   */
+  private async withTokenRefresh<T>(fn: () => Promise<T>): Promise<T> {
+    await this.tokenManager.ensureValid();
+    try {
+      return await fn();
+    } catch (error) {
+      // On 401, try refreshing once and retry
+      if (
+        this.config.sessionToken &&
+        error instanceof GLabsError &&
+        error.statusCode === 401
+      ) {
+        this.config.logger.warn(
+          "[Client] Got 401, refreshing token and retrying..."
+        );
+        await this.tokenManager.forceRefresh();
+        return await fn();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Manually refresh the bearer token using the session token.
+   * Useful when you know the token has expired.
+   */
+  async refreshToken(): Promise<void> {
+    await this.tokenManager.forceRefresh();
   }
 
   /**
@@ -229,13 +266,13 @@ export class GLabsClient {
      * Get video credit status for the account
      */
     getCreditStatus: (): Promise<CreditStatusResult> =>
-      this.imageService.getCreditStatus(),
+      this.withTokenRefresh(() => this.imageService.getCreditStatus()),
 
     /**
      * Upload an image to Google Labs
      */
     upload: (options: UploadImageOptions): Promise<UploadImageResult> =>
-      this.imageService.uploadImage(options),
+      this.withTokenRefresh(() => this.imageService.uploadImage(options)),
 
     /**
      * Generate images from a prompt
@@ -253,10 +290,9 @@ export class GLabsClient {
         });
       }
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.imageService.generateImage({
-        ...options,
-        projectId,
-      });
+      return this.withTokenRefresh(() =>
+        this.imageService.generateImage({ ...options, projectId })
+      );
     },
 
     /**
@@ -266,7 +302,9 @@ export class GLabsClient {
       options: Omit<UpsampleImageOptions, "projectId"> & { projectId?: string }
     ): Promise<UpsampleImageResult> => {
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.imageService.upsampleImage({ ...options, projectId });
+      return this.withTokenRefresh(() =>
+        this.imageService.upsampleImage({ ...options, projectId })
+      );
     },
   };
 
@@ -296,11 +334,13 @@ export class GLabsClient {
         });
       }
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.videoService.generateTextToVideo({
-        ...options,
-        projectId,
-        accountTier: options.accountTier ?? this.config.accountTier,
-      });
+      return this.withTokenRefresh(() =>
+        this.videoService.generateTextToVideo({
+          ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
+        })
+      );
     },
 
     /**
@@ -328,11 +368,13 @@ export class GLabsClient {
         });
       }
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.videoService.generateImageToVideo({
-        ...options,
-        projectId,
-        accountTier: options.accountTier ?? this.config.accountTier,
-      });
+      return this.withTokenRefresh(() =>
+        this.videoService.generateImageToVideo({
+          ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
+        })
+      );
     },
 
     /**
@@ -346,11 +388,13 @@ export class GLabsClient {
       }
     ): Promise<VideoOperationResult> => {
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.videoService.extendVideo({
-        ...options,
-        projectId,
-        accountTier: options.accountTier ?? this.config.accountTier,
-      });
+      return this.withTokenRefresh(() =>
+        this.videoService.extendVideo({
+          ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
+        })
+      );
     },
 
     /**
@@ -364,11 +408,13 @@ export class GLabsClient {
       }
     ): Promise<VideoOperationResult> => {
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.videoService.reshootVideo({
-        ...options,
-        projectId,
-        accountTier: options.accountTier ?? this.config.accountTier,
-      });
+      return this.withTokenRefresh(() =>
+        this.videoService.reshootVideo({
+          ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
+        })
+      );
     },
 
     /**
@@ -379,10 +425,12 @@ export class GLabsClient {
         aspectRatio?: AspectRatio;
       }
     ): Promise<VideoOperationResult> =>
-      this.videoService.upsampleVideo({
-        ...options,
-        aspectRatio: options.aspectRatio ?? "16:9",
-      }),
+      this.withTokenRefresh(() =>
+        this.videoService.upsampleVideo({
+          ...options,
+          aspectRatio: options.aspectRatio ?? "16:9",
+        })
+      ),
 
     /**
      * Generate video from reference images (1-3 images)
@@ -398,11 +446,13 @@ export class GLabsClient {
       }
     ): Promise<VideoOperationResult> => {
       const projectId = await this.resolveProjectId(options.projectId);
-      return this.videoService.generateReferenceImagesVideo({
-        ...options,
-        projectId,
-        accountTier: options.accountTier ?? this.config.accountTier,
-      });
+      return this.withTokenRefresh(() =>
+        this.videoService.generateReferenceImagesVideo({
+          ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
+        })
+      );
     },
 
     /**
@@ -410,7 +460,8 @@ export class GLabsClient {
      */
     checkStatus: (
       options: CheckVideoStatusOptions
-    ): Promise<VideoStatusResult> => this.videoService.checkStatus(options),
+    ): Promise<VideoStatusResult> =>
+      this.withTokenRefresh(() => this.videoService.checkStatus(options)),
 
     /**
      * Poll a video operation until completion, failure, or timeout
@@ -419,8 +470,10 @@ export class GLabsClient {
     pollOperation: (
       options: PollOperationOptions
     ): Promise<VideoStatusResult> =>
-      this.vertexVideoService
-        ? this.vertexVideoService.pollOperation(options as PollOperationOptions & { operationName: string })
-        : this.videoService.pollOperation(options),
+      this.withTokenRefresh(() =>
+        this.vertexVideoService
+          ? this.vertexVideoService.pollOperation(options as PollOperationOptions & { operationName: string })
+          : this.videoService.pollOperation(options)
+      ),
   };
 }

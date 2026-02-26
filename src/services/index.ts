@@ -25,3 +25,4 @@ export type {
 } from "./whisk.service";
 export { WhiskService } from "./whisk.service";
 export { OpenAICompatService } from "./openai-compat.service";
+export { TokenManager } from "./token-manager";

@@ -33,7 +33,7 @@ export type RecaptchaConfig = {
 
 /** Playwright browser reCAPTCHA options */
 export type PlaywrightRecaptchaOptions = {
-  /** Run browser in headless mode (default: true) */
+  /** Run browser in headless mode (default: false - headed gets higher reCAPTCHA scores) */
   headless?: boolean;
   /** Browser proxy configuration */
   proxy?: {

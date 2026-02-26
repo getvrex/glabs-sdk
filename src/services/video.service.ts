@@ -451,7 +451,7 @@ export class VideoService {
               seed: finalSeed,
               videoInput: { mediaId: originalMediaId },
               videoModelKey: DEFAULTS.VIDEO_UPSAMPLE_MODEL,
-              resolution: resolution ?? "VIDEO_RESOLUTION_4K",
+              resolution: resolution ?? "VIDEO_RESOLUTION_1080P",
               metadata: workflowId ? { workflowId } : {},
             },
           ],
