@@ -1,6 +1,6 @@
 {
   "name": "@getvrex/glabs-sdk",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "TypeScript SDK for Google Labs AI media generation APIs",
   "type": "module",
   "bin": {
