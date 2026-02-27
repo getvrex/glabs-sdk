@@ -197,6 +197,7 @@ export class OpenAICompatService {
     model?: "nanobanana2"
   ): Promise<string> {
     const referenceImageIds: string[] = [];
+    const projectId = await this.client.projects.getFirstProjectId();
 
     if (images && images.length > 0) {
       for (const imageUrl of images) {
@@ -207,6 +208,7 @@ export class OpenAICompatService {
               imageBase64: base64,
               sessionId,
               aspectRatio,
+              projectId,
             });
             const mediaId = uploadResult.mediaId ?? uploadResult.mediaGenerationId;
             if (mediaId) {
