@@ -24,7 +24,7 @@ const config = {
   bearerToken: process.env.GLABS_BEARER_TOKEN,
   sessionToken: process.env.GLABS_SESSION_TOKEN,
   recaptchaApiKey: process.env.RECAPTCHA_API_KEY,
-  recaptchaProvider: (process.env.RECAPTCHA_PROVIDER || "regotcha") as RecaptchaProvider,
+  recaptchaProvider: (process.env.RECAPTCHA_PROVIDER || "chrome") as RecaptchaProvider,
   // Skip video tests to save credits (set to "true" to run)
   runVideoTests: process.env.RUN_VIDEO_TESTS === "true",
 };
