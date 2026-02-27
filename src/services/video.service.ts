@@ -236,10 +236,19 @@ export class VideoService {
     const hasEndImage = Boolean(endMediaId?.trim());
     const generationType = hasEndImage ? "image-to-video-fl" : "image-to-video";
 
+    // Flow I2V currently rejects square aspect ratio for this endpoint.
+    // Normalize 1:1 requests to landscape to avoid INVALID_ARGUMENT errors.
+    const normalizedAspectRatio = aspectRatio === "1:1" ? "16:9" : aspectRatio;
+    if (aspectRatio === "1:1") {
+      this.logger.warn(
+        "[Video] Image-to-video: aspectRatio 1:1 is not supported by Flow endpoint; falling back to 16:9"
+      );
+    }
+
     const config = getVideoApiConfig(
       generationType,
       accountTier,
-      aspectRatio,
+      normalizedAspectRatio,
       videoMode
     );
 
