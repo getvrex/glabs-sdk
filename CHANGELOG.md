@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.1](https://github.com/getvrex/glabs-sdk/compare/v2.1.0...v2.1.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **i2v:** fallback square aspect ratio to landscape for Flow endpoint ([56e138c](https://github.com/getvrex/glabs-sdk/commit/56e138c8872c7f4184b99bf9eb5be446c2d6511a))
+* **openai-compat:** include projectId when uploading reference images ([e111383](https://github.com/getvrex/glabs-sdk/commit/e1113830474b7c9939965f257dbaa1239452292b))
+* **openai-compat:** use references field for image generation ([a2efb9b](https://github.com/getvrex/glabs-sdk/commit/a2efb9b7e9570e97ed171ed79fcecc81c1721f6f))
+* **recaptcha:** stop retry messaging at max attempts and fail fast ([08fd426](https://github.com/getvrex/glabs-sdk/commit/08fd426d97c9211c5d02d1b39ff05a7b05b46d05))
+
 ## [2.1.0](https://github.com/getvrex/glabs-sdk/compare/v2.0.0...v2.1.0) (2026-02-27)
 
 
