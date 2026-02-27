@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/getvrex/glabs-sdk/compare/v2.0.0...v2.1.0) (2026-02-27)
+
+
+### Features
+
+* add nanobanana2 and reference images for T2I ([8def52a](https://github.com/getvrex/glabs-sdk/commit/8def52a107e09e1d8f4b503437b4151b205e1864))
+
+
+### Bug Fixes
+
+* **openai-compat:** use references field for image generation ([a2efb9b](https://github.com/getvrex/glabs-sdk/commit/a2efb9b7e9570e97ed171ed79fcecc81c1721f6f))
+
 ## [2.0.0](https://github.com/getvrex/glabs-sdk/compare/v1.4.0...v2.0.0) (2026-02-27)
 
 
