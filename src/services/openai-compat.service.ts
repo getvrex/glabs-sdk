@@ -224,7 +224,10 @@ export class OpenAICompatService {
       sessionId,
       aspectRatio,
       model,
-      referenceImages: referenceImageIds.length > 0 ? referenceImageIds : undefined,
+      references:
+        referenceImageIds.length > 0
+          ? referenceImageIds.map((mediaId) => ({ mediaId }))
+          : undefined,
     });
 
     if (result.images && result.images.length > 0) {
