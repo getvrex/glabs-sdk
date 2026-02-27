@@ -388,8 +388,13 @@ export function getImageApiConfig(
   aspectRatio: AspectRatio,
   model?: ImageModel
 ): ImageApiConfig {
+  const IMAGE_MODEL_MAP: Record<string, ImageApiConfig["imageModelName"]> = {
+    nanobananapro: "GEM_PIX_2",
+    nanobanana2: "NARWHAL",
+  };
+
   return {
-    imageModelName: model === "nanobananapro" ? "GEM_PIX_2" : "GEM_PIX",
+    imageModelName: IMAGE_MODEL_MAP[model ?? ""] ?? "GEM_PIX",
     aspectRatioEnum: getImageAspectRatioEnum(aspectRatio),
   };
 }

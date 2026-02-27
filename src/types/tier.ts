@@ -41,7 +41,7 @@ export type VideoApiConfig = {
 /** Image API configuration */
 export type ImageApiConfig = {
   /** Image model name for the API request */
-  imageModelName: "GEM_PIX" | "GEM_PIX_2";
+  imageModelName: "GEM_PIX" | "GEM_PIX_2" | "NARWHAL";
   /** Aspect ratio enum for the API request */
   aspectRatioEnum: ImageAspectRatioEnum;
 };
