@@ -23,7 +23,7 @@
 
 GLabs SDK provides a type-safe TypeScript interface for Google Labs AI APIs:
 
-- **Image Generation**: Imagen 3 models (nanobanana, nanobananapro)
+- **Image Generation**: Imagen models (nanobanana, nanobananapro, nanobanana2)
 - **Video Generation**: Veo 2/3 models with multiple modes
 - **reCAPTCHA Integration**: Built-in support for multiple providers
 - **Account Tiers**: Pro and Ultra tier management
@@ -188,7 +188,7 @@ const result = await client.images.generate({
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
   count: 4,              // 1-4 images
-  model: 'nanobanana',   // or 'nanobananapro'
+  model: 'nanobanana',   // or 'nanobananapro', 'nanobanana2'
 });
 
 for (const image of result.images) {
@@ -208,7 +208,7 @@ for (const image of result.images) {
 | `references` | `ImageReference[]` | No | Reference images |
 | `seed` | `number` | No | Random seed |
 | `count` | `number` | No | Images to generate (1-4) |
-| `model` | `'nanobanana' \| 'nanobananapro'` | No | Model |
+| `model` | `'nanobanana' \| 'nanobananapro' \| 'nanobanana2'` | No | Model |
 | `prompts` | `string[]` | No | Different prompt per image |
 
 ### Using Reference Images
@@ -240,6 +240,7 @@ console.log(credits.credits);
 |-------|-------------|
 | `nanobanana` | Standard Imagen (GEM_PIX) |
 | `nanobananapro` | Enhanced Imagen (GEM_PIX_2) |
+| `nanobanana2` | Nano Banana 2 (NARWHAL) |
 
 ---
 
@@ -779,7 +780,7 @@ interface UpsampleVideoOptions {
 type AccountTier = 'pro' | 'ultra';
 type VideoMode = 'quality' | 'fast';
 type AspectRatio = '16:9' | '9:16' | '1:1';
-type ImageModel = 'nanobanana' | 'nanobananapro';
+type ImageModel = 'nanobanana' | 'nanobananapro' | 'nanobanana2';
 
 type ReshootMotionType =
   | 'RESHOOT_MOTION_TYPE_UP'

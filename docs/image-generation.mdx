@@ -31,7 +31,7 @@ type GenerateImageOptions = {
   sessionId: string;           // Required: session ID
   aspectRatio: AspectRatio;    // Required: '16:9' | '9:16' | '1:1'
   projectId?: string;          // Auto-resolved if omitted
-  model?: ImageModel;          // 'nanobanana' | 'nanobananapro' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra'
+  model?: ImageModel;          // 'nanobanana' | 'nanobananapro' | 'nanobanana2' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra'
   count?: number;              // Images to generate (1-4, default: 1)
   references?: ImageReference[]; // Reference images for style guidance
   seed?: number;               // Random seed for reproducibility
@@ -91,6 +91,7 @@ const result = await client.images.generate({
 |-------|--------------|-------------|
 | `nanobanana` | `GEM_PIX` | Imagen 4 standard |
 | `nanobananapro` | `GEM_PIX_2` | Imagen 4 Pro |
+| `nanobanana2` | `NARWHAL` | Nano Banana 2 |
 | `imagen-4` | `GEM_PIX` | Alias for nanobanana |
 | `imagen-4-fast` | `GEM_PIX` | Fast variant |
 | `imagen-4-ultra` | `GEM_PIX` | Ultra variant |

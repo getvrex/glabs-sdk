@@ -48,7 +48,7 @@ const result = await client.images.generate({
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
   count: 4,         // Generate 4 images
-  model: 'nanobanana', // or 'nanobananapro'
+  model: 'nanobanana', // or 'nanobananapro', 'nanobanana2'
 });
 
 for (const image of result.images) {
@@ -138,6 +138,7 @@ console.log(credits.isUserAnimateCountryEnabled); // Animate feature access
 |-------|-------------|
 | `nanobanana` | Standard Imagen model (GEM_PIX) |
 | `nanobananapro` | Enhanced Imagen model (GEM_PIX_2) |
+| `nanobanana2` | Nano Banana 2 model (NARWHAL) |
 
 ## Aspect Ratios
 

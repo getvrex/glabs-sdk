@@ -200,7 +200,7 @@ const result = await client.images.generate({
   aspectRatio: '16:9',
   count: 2,           // Optional: 1-4 images
   seed: 12345,        // Optional: for reproducibility
-  model: 'nanobanana', // Optional: 'nanobanana' | 'nanobananapro'
+  model: 'nanobanana', // Optional: 'nanobanana' | 'nanobananapro' | 'nanobanana2'
   references: [       // Optional: reference images
     { mediaId: 'uploaded-media-id' }
   ],
@@ -217,7 +217,7 @@ const result = await client.images.generate({
 | `projectId` | `string` | No | Override client projectId |
 | `count` | `number` | No | Number of images (1-4) |
 | `seed` | `number` | No | Random seed |
-| `model` | `'nanobanana' \| 'nanobananapro'` | No | Image model |
+| `model` | `'nanobanana' \| 'nanobananapro' \| 'nanobanana2'` | No | Image model |
 | `references` | `ImageReference[]` | No | Reference images |
 | `prompts` | `string[]` | No | Multiple prompts (overrides count) |
 

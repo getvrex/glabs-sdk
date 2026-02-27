@@ -146,7 +146,7 @@ import type { AccountTier, GenerateImageOptions } from '@getvrex/glabs-sdk/types
 type AccountTier = 'pro' | 'ultra';
 type VideoMode = 'quality' | 'fast';
 type AspectRatio = '16:9' | '9:16' | '1:1';
-type ImageModel = 'nanobanana' | 'nanobananapro' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra';
+type ImageModel = 'nanobanana' | 'nanobananapro' | 'nanobanana2' | 'imagen-4' | 'imagen-4-fast' | 'imagen-4-ultra';
 type VideoGenerationType = 'text-to-video' | 'image-to-video' | 'image-to-video-fl' | 'extend' | 'reshoot' | 'upsample' | 'reference-images';
 type PaygateTier = 'PAYGATE_TIER_ONE' | 'PAYGATE_TIER_TWO';
 type VideoResolution = 'VIDEO_RESOLUTION_1080P' | 'VIDEO_RESOLUTION_4K';
@@ -503,7 +503,7 @@ type VideoApiConfig = {
 };
 
 type ImageApiConfig = {
-  imageModelName: 'GEM_PIX' | 'GEM_PIX_2';
+  imageModelName: 'GEM_PIX' | 'GEM_PIX_2' | 'NARWHAL';
   aspectRatioEnum: ImageAspectRatioEnum;
 };
 
