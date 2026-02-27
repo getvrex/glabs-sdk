@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.5.0](https://github.com/getvrex/glabs-sdk/compare/v1.4.0...v1.5.0) (2026-02-27)
+
+
+### Features
+
+* add `glabs` CLI tool for terminal-based SDK access ([f6e7a2f](https://github.com/getvrex/glabs-sdk/commit/f6e7a2f0440a7aac03124b14729e6aff704cbdb7))
+* add auto token refresh (ST→AT) and improve Playwright reCAPTCHA ([35de2a0](https://github.com/getvrex/glabs-sdk/commit/35de2a09db0af34090644e0c19367b66cc7c3d37))
+* add Chrome persistent browser reCAPTCHA provider with fallback support ([8c8a34b](https://github.com/getvrex/glabs-sdk/commit/8c8a34b7caed88dab5f2e65a8271184c0cdfdba0))
+* add Nano Banana 2 (NARWHAL) image model support ([2b59e31](https://github.com/getvrex/glabs-sdk/commit/2b59e312e438fd0cf053ef9fcc7e96f8e19deb42))
+* add Playwright browser reCAPTCHA provider and OpenAI-compatible server ([a57addf](https://github.com/getvrex/glabs-sdk/commit/a57addfa491cd219961f6279761d3b81cd47f964))
+* add pollOperation method to VideoService ([b0da027](https://github.com/getvrex/glabs-sdk/commit/b0da027d0d46445b1ad22c1940131df90efc80cc))
+* add Vertex AI Imagen 4 image generation ([1ce74d9](https://github.com/getvrex/glabs-sdk/commit/1ce74d96e36a2c018cf4260bfdb98554407a7e46))
+* add VertexVideoService for Veo 3 on Vertex AI ([062db8e](https://github.com/getvrex/glabs-sdk/commit/062db8ecc4db73d76193761b848c4b79f8bd979a))
+* add WhiskService for Google Whisk API (GEM_PIX style-ref image gen) ([02b09da](https://github.com/getvrex/glabs-sdk/commit/02b09da711406d4149850aeb8e949d43c6b07159))
+* **docs:** add LLM-friendly documentation and update logo ([33a4efe](https://github.com/getvrex/glabs-sdk/commit/33a4efe6eb2206dcc43e43a749cb2dd915d754b7))
+* expose pollOperation on client.videos facade ([529c459](https://github.com/getvrex/glabs-sdk/commit/529c459aa8c9a13ddca8507b4bb170dfee79fac8))
+* update API payloads to match latest Google Flow format ([9ea6c00](https://github.com/getvrex/glabs-sdk/commit/9ea6c003bbc6815040856ba44c7e33ab7df5833d))
+* Vertex AI video support, CapSolver default, base64 i2v ([947fb28](https://github.com/getvrex/glabs-sdk/commit/947fb28d1184f15cf7ddacf8af238bf29283f20f))
+
+
+### Bug Fixes
+
+* **docs:** update reCAPTCHA provider examples to use regotcha ([b2cf081](https://github.com/getvrex/glabs-sdk/commit/b2cf0818f418f6dce8c39ccd8c4a88286ae48631))
+* t2v portrait models need _portrait suffix for 9:16 aspect ratio ([fb7aff9](https://github.com/getvrex/glabs-sdk/commit/fb7aff9ccde87fd360e5f6434bbd7a26e99117e2))
+* tier-model awareness — pro uses non-ultra models, correct sessionId format, fix reCAPTCHA URL ([17f73b7](https://github.com/getvrex/glabs-sdk/commit/17f73b7e0149812103f7759c15595087d41f61ac))
+* use IMAGE_GENERATION action + recaptchaContext format ([43297f2](https://github.com/getvrex/glabs-sdk/commit/43297f28072d96177ae5dd91d90f70418a341086))
+* VIDEO_GENERATION action + recaptchaContext for video service ([daf5bf5](https://github.com/getvrex/glabs-sdk/commit/daf5bf52a97db251ad6ce9131eb5a48d3db7088b))
+
 ## [1.4.0](https://github.com/getvrex/glabs-sdk/compare/v1.3.2...v1.4.0) (2026-01-03)
 
 
