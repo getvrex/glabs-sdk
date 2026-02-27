@@ -38,6 +38,21 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     aspectRatio: "1:1",
     description: "Imagen 4 Square",
   },
+  "nanobanana2-landscape": {
+    type: "image",
+    aspectRatio: "16:9",
+    description: "Nanobanana2 Landscape",
+  },
+  "nanobanana2-portrait": {
+    type: "image",
+    aspectRatio: "9:16",
+    description: "Nanobanana2 Portrait",
+  },
+  "nanobanana2-square": {
+    type: "image",
+    aspectRatio: "1:1",
+    description: "Nanobanana2 Square",
+  },
   // Video T2V models
   "veo-3-t2v-landscape": {
     type: "video-t2v",
@@ -145,7 +160,8 @@ export class OpenAICompatService {
 
     switch (modelConfig.type) {
       case "image":
-        return this.generateImage(prompt, sessionId, modelConfig.aspectRatio);
+        const imageModel = request.model.startsWith("nanobanana") ? "nanobanana2" : undefined;
+        return this.generateImage(prompt, images, sessionId, modelConfig.aspectRatio, imageModel as any);
 
       case "video-t2v":
         return this.generateTextToVideo(
@@ -175,13 +191,40 @@ export class OpenAICompatService {
   /** Generate image and return markdown with base64 */
   private async generateImage(
     prompt: string,
+    images: string[],
     sessionId: string,
-    aspectRatio: AspectRatio
+    aspectRatio: AspectRatio,
+    model?: "nanobanana2"
   ): Promise<string> {
+    const referenceImageIds: string[] = [];
+
+    if (images && images.length > 0) {
+      for (const imageUrl of images) {
+        const base64 = this.extractBase64(imageUrl);
+        if (base64) {
+          try {
+            const uploadResult = await this.client.images.upload({
+              imageBase64: base64,
+              sessionId,
+              aspectRatio,
+            });
+            const mediaId = uploadResult.mediaId ?? uploadResult.mediaGenerationId;
+            if (mediaId) {
+              referenceImageIds.push(mediaId);
+            }
+          } catch (error) {
+            console.error("[OpenAI] Failed to upload reference image:", error);
+          }
+        }
+      }
+    }
+
     const result = await this.client.images.generate({
       prompt,
       sessionId,
       aspectRatio,
+      model,
+      referenceImages: referenceImageIds.length > 0 ? referenceImageIds : undefined,
     });
 
     if (result.images && result.images.length > 0) {

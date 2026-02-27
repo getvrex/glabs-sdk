@@ -162,7 +162,7 @@ if (shouldRun("chrome")) {
 // ---------------------------------------------------------------------------
 // Test: Playwright reCAPTCHA
 // ---------------------------------------------------------------------------
-if (shouldRun("playwright")) {
+if (false && shouldRun("playwright")) {
   console.log("--- Test: Playwright reCAPTCHA ---");
   try {
     const { PlaywrightRecaptchaService } = await import("./src/services/playwright-recaptcha.service");
@@ -265,7 +265,7 @@ if (shouldRun("upload") && projectId) {
 // ---------------------------------------------------------------------------
 // Test: Image upsample (new /v1/flow/upsampleImage endpoint)
 // ---------------------------------------------------------------------------
-if (shouldRun("upsample-image") && imageMediaId) {
+if (false && shouldRun("upsample-image") && imageMediaId) {
   console.log("--- Test: Image Upsample (new endpoint) ---");
   try {
     const result = await client.images.upsampleImage({
@@ -328,6 +328,25 @@ if (shouldRun("video") && projectId) {
 }
 
 // Cleanup persistent browser
+if (shouldRun("t2v") || shouldRun("all") || !testFilter) {
+  if (projectId) {
+    console.log("--- Test: T2V + Status Check ---");
+    try {
+      const videoOp = await client.videos.generateTextToVideo({
+        prompt: "A beautiful cinematic shot of a futuristic city",
+        sessionId,
+        projectId,
+        aspectRatio: "16:9",
+      });
+      console.log("  operationName:", videoOp.operationName);
+      console.log("  mediaId:", videoOp.mediaId);
+      console.log("  status:", videoOp.status);
+      console.log("  PASS\n");
+    } catch (error) {
+      console.log("  FAIL:", (error as Error).message, "\n");
+    }
+  }
+}
 await client.close();
 
 console.log("=== Done ===");

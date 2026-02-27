@@ -27,7 +27,7 @@ export async function createClient(cfg: CliConfig) {
             apiKey: cfg.recaptchaApiKey,
           }
         : undefined,
-    logger: { log() {}, warn() {}, error() {} },
+    logger: console,
   });
 }
 
