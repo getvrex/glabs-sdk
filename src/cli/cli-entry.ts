@@ -5,7 +5,7 @@
  * Usage: glabs <command> [subcommand] [options]
  */
 
-const VERSION = "1.4.0";
+const VERSION = "2.0.0";
 
 const HELP = `glabs — Google Labs AI CLI
 
