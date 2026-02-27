@@ -251,7 +251,7 @@ export function getVideoAspectRatioEnum(
     case "9:16":
       return "VIDEO_ASPECT_RATIO_PORTRAIT";
     case "1:1":
-      return "VIDEO_ASPECT_RATIO_SQUARE";
+      return "VIDEO_ASPECT_RATIO_LANDSCAPE";
     default:
       return "VIDEO_ASPECT_RATIO_LANDSCAPE";
   }

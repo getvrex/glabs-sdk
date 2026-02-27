@@ -64,11 +64,7 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     aspectRatio: "9:16",
     description: "Veo 3 Text-to-Video Portrait",
   },
-  "veo-3-t2v-square": {
-    type: "video-t2v",
-    aspectRatio: "1:1",
-    description: "Veo 3 Text-to-Video Square",
-  },
+
   // Video I2V models
   "veo-3-i2v-landscape": {
     type: "video-i2v",
@@ -80,11 +76,7 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     aspectRatio: "9:16",
     description: "Veo 3 Image-to-Video Portrait",
   },
-  "veo-3-i2v-square": {
-    type: "video-i2v",
-    aspectRatio: "1:1",
-    description: "Veo 3 Image-to-Video Square",
-  },
+
 };
 
 /**
@@ -201,11 +193,13 @@ export class OpenAICompatService {
 
     if (images && images.length > 0) {
       for (const imageUrl of images) {
-        const base64 = this.extractBase64(imageUrl);
-        if (base64) {
+        const imageData = imageUrl.startsWith("data:image/")
+          ? imageUrl
+          : this.extractBase64(imageUrl);
+        if (imageData) {
           try {
             const uploadResult = await this.client.images.upload({
-              imageBase64: base64,
+              imageBase64: imageData,
               sessionId,
               aspectRatio,
               projectId,
@@ -284,8 +278,11 @@ export class OpenAICompatService {
       );
     }
 
-    const base64 = this.extractBase64(images[0]!);
-    if (!base64) {
+    const firstImage = images[0]!;
+    const imageData = firstImage.startsWith("data:image/")
+      ? firstImage
+      : this.extractBase64(firstImage);
+    if (!imageData) {
       throw new Error(
         "Image must be provided as base64 data URL for image-to-video generation"
       );
@@ -293,7 +290,7 @@ export class OpenAICompatService {
 
     // Upload the image first to get a startMediaId
     const uploadResult = await this.client.images.upload({
-      imageBase64: base64,
+      imageBase64: imageData,
       sessionId,
       aspectRatio,
     });

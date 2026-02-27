@@ -833,6 +833,6 @@ export class VideoService {
     if (aspectRatio === "9:16") {
       return "VIDEO_ASPECT_RATIO_PORTRAIT";
     }
-    return "VIDEO_ASPECT_RATIO_SQUARE";
+    return "VIDEO_ASPECT_RATIO_LANDSCAPE";
   }
 }

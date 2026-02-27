@@ -30,8 +30,7 @@ export type PaygateTier = "PAYGATE_TIER_ONE" | "PAYGATE_TIER_TWO";
 /** Video aspect ratio enum for API requests */
 export type VideoAspectRatioEnum =
   | "VIDEO_ASPECT_RATIO_LANDSCAPE"
-  | "VIDEO_ASPECT_RATIO_PORTRAIT"
-  | "VIDEO_ASPECT_RATIO_SQUARE";
+  | "VIDEO_ASPECT_RATIO_PORTRAIT";
 
 /** Image aspect ratio enum for API requests */
 export type ImageAspectRatioEnum =
