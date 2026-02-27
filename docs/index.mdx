@@ -13,7 +13,7 @@ description: TypeScript SDK for Google Labs AI media generation APIs (Imagen, Ve
 - **Video Generation** — Veo 3 text-to-video, image-to-video, first+last frame, extend, camera control reshoot, reference images, HD/4K upsample
 - **Project Management** — List, get, and auto-resolve Google Labs projects
 - **Auto Token Refresh** — Automatic ST→AT (session token to access token) refresh with proactive renewal
-- **reCAPTCHA Integration** — 7 providers: Regotcha, CapSolver, YesCaptcha, Veo3Solver, Playwright browser, Chrome browser, Custom
+- **reCAPTCHA Integration** — 7 providers: Chrome browser (recommended), YesCaptcha (recommended), Playwright, Regotcha, CapSolver, Veo3Solver, Custom
 - **OpenAI-Compatible Server** — Drop-in `/v1/chat/completions` and `/v1/models` endpoints
 - **Whisk Service** — Standalone Imagen 3.5 generation via Google Whisk API
 - **Tier-Aware** — Automatic model selection based on Pro/Ultra account tier
@@ -30,8 +30,7 @@ const client = new GLabsClient({
   sessionToken: 'your-session-token',  // enables auto token refresh
   accountTier: 'pro',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: 'your-api-key',
+    provider: 'chrome',  // recommended: chrome or yescaptcha
   },
 });
 
@@ -66,6 +65,7 @@ await client.close();
 
 <Cards>
   <Card title="Getting Started" href="/docs/glabs-sdk/getting-started" />
+  <Card title="CLI" href="/docs/glabs-sdk/cli" />
   <Card title="Client Configuration" href="/docs/glabs-sdk/client" />
   <Card title="Image Generation" href="/docs/glabs-sdk/image-generation" />
   <Card title="Video Generation" href="/docs/glabs-sdk/video-generation" />

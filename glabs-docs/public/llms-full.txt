@@ -73,8 +73,7 @@ const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
   accountTier: 'pro',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome', // recommended: chrome or yescaptcha
   },
 });
 
@@ -422,9 +421,56 @@ Pro defaults to `fast`, Ultra defaults to `quality`.
 
 ## reCAPTCHA Configuration
 
-Both image and video generation require reCAPTCHA. The SDK supports multiple providers.
+All generation requires reCAPTCHA. The SDK supports 7 providers with fallback chains.
 
-### Regotcha (Recommended)
+### Chrome (Recommended)
+
+Real Chrome browser with persistent context. Highest reCAPTCHA scores, no API costs.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'chrome',
+    chromeOptions: {
+      headless: false,
+      maxRetries: 3,
+      timeout: 30000,
+    },
+  },
+});
+```
+
+### YesCaptcha (Recommended)
+
+Reliable cloud-based solving. No local browser needed.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'yescaptcha',
+    apiKey: 'your-yescaptcha-key',
+    maxRetries: 20,
+  },
+});
+```
+
+### Playwright
+
+Playwright-managed browser for local token generation.
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'playwright',
+    playwrightOptions: { headless: false, maxRetries: 3 },
+  },
+});
+```
+
+### Regotcha
 
 ```typescript
 const client = new GLabsClient({
@@ -437,7 +483,7 @@ const client = new GLabsClient({
 });
 ```
 
-### CapSolver (Recommended)
+### CapSolver
 
 ```typescript
 const client = new GLabsClient({
@@ -445,21 +491,8 @@ const client = new GLabsClient({
   recaptcha: {
     provider: 'capsolver',
     apiKey: 'your-capsolver-api-key',
-    proxy: 'http://user:pass@ip:port', // Optional
+    proxy: 'http://user:pass@ip:port',
     maxRetries: 30,
-  },
-});
-```
-
-### YesCaptcha
-
-```typescript
-const client = new GLabsClient({
-  bearerToken: 'token',
-  recaptcha: {
-    provider: 'yescaptcha',
-    apiKey: 'your-yescaptcha-key',
-    maxRetries: 20,
   },
 });
 ```
@@ -511,7 +544,7 @@ And return:
 const client = new GLabsClient({
   bearerToken: 'token',
   recaptcha: {
-    provider: 'regotcha',
+    provider: 'chrome', // required but ignored
     staticToken: 'pre-obtained-token', // Bypasses provider
   },
 });
@@ -528,6 +561,9 @@ const client = new GLabsClient({
 | `staticToken` | `string` | No | Static token (testing) |
 | `proxy` | `string` | No | Proxy URL |
 | `maxRetries` | `number` | No | Max polling attempts |
+| `chromeOptions` | `object` | No | Chrome browser config |
+| `playwrightOptions` | `object` | No | Playwright browser config |
+| `fallback` | `RecaptchaConfig` | No | Fallback provider config |
 
 ---
 
@@ -651,7 +687,7 @@ interface GLabsClientConfig {
 }
 
 interface RecaptchaConfig {
-  provider: 'yescaptcha' | 'capsolver' | 'regotcha' | 'veo3solver' | 'custom';
+  provider: 'chrome' | 'yescaptcha' | 'playwright' | 'regotcha' | 'capsolver' | 'veo3solver' | 'custom';
   apiKey?: string;
   jwtToken?: string;
   customEndpoint?: string;

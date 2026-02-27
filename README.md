@@ -207,6 +207,7 @@ Full documentation available in [`docs/`](./docs/):
 | Guide | Description |
 |-------|-------------|
 | [Getting Started](./docs/getting-started.mdx) | Installation and setup |
+| [CLI](./docs/cli.mdx) | Command-line interface |
 | [Client](./docs/client.mdx) | Client configuration |
 | [Image Generation](./docs/image-generation.mdx) | Image API reference |
 | [Video Generation](./docs/video-generation.mdx) | Video API reference |

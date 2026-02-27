@@ -15,7 +15,7 @@ import { Cards, Card } from 'fumadocs-ui/components/card';
 - **Video Generation** - Create videos using Google's Veo models
 - **Multiple Video Modes** - Support for text-to-video, image-to-video, video extension, camera control, and more
 - **Account Tier Support** - Automatic handling of Free, Pro and Ultra tier differences
-- **reCAPTCHA Integration** - Built-in support for Regotcha, CapSolver, YesCaptcha, and custom providers
+- **reCAPTCHA Integration** - 7 providers: Chrome browser (recommended), YesCaptcha (recommended), Playwright, Regotcha, CapSolver, Veo3Solver, Custom
 - **Type-Safe** - Full TypeScript support with exported types
 - **Retry Logic** - Automatic retry on network errors
 
@@ -29,8 +29,7 @@ const client = new GLabsClient({
   accountTier: 'pro',
   projectId: 'your-project-id',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: 'your-recaptcha-api-key',
+    provider: 'chrome',  // recommended: chrome or yescaptcha
   },
 });
 
@@ -58,6 +57,7 @@ const status = await client.videos.checkStatus({
 
 <Cards>
   <Card title="Getting Started" href="/docs/getting-started" description="Installation and setup guide" />
+  <Card title="CLI" href="/docs/cli" description="Terminal-based SDK access" />
   <Card title="Client Configuration" href="/docs/client" description="Configure the GLabs client" />
   <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen" />
   <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo" />

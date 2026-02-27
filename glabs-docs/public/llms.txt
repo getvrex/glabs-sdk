@@ -10,7 +10,7 @@ GLabs SDK provides a type-safe interface for generating AI images and videos usi
 
 - Image Generation via Imagen 3 (text-to-image, reference-based)
 - Video Generation via Veo 2/3 (text-to-video, image-to-video, extend, camera control, HD upscaling)
-- Built-in reCAPTCHA solving (Regotcha, CapSolver, YesCaptcha, Veo3Solver, Custom)
+- Built-in reCAPTCHA solving (Chrome, YesCaptcha, Playwright, Regotcha, CapSolver, Veo3Solver, Custom)
 - Account tier management (Pro, Ultra)
 - TypeScript-first with full type exports
 - Automatic retry and error handling
@@ -30,8 +30,7 @@ const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN,
   accountTier: 'pro',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: process.env.RECAPTCHA_API_KEY,
+    provider: 'chrome', // recommended: chrome or yescaptcha
   },
 });
 
@@ -57,6 +56,7 @@ const video = await client.videos.generateTextToVideo({
 - [Client Configuration](/docs/client): Client options and configuration
 - [Image Generation](/docs/image-generation): Image API reference
 - [Video Generation](/docs/video-generation): Video API reference
+- [CLI](/docs/cli): Command-line interface
 - [reCAPTCHA](/docs/recaptcha): reCAPTCHA provider setup
 - [Tier Config](/docs/tier-config): Account tier utilities
 - [API Reference](/docs/api-reference): Complete API reference
@@ -81,7 +81,7 @@ const video = await client.videos.generateTextToVideo({
 - `AccountTier`: 'pro' | 'ultra'
 - `AspectRatio`: '16:9' | '9:16' | '1:1'
 - `VideoMode`: 'quality' | 'fast'
-- `ImageModel`: 'nanobanana' | 'nanobananapro'
+- `ImageModel`: 'nanobanana' | 'nanobananapro' | 'nanobanana2'
 
 ## Source
 

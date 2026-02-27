@@ -41,7 +41,7 @@ This is a private package. Configure your `.npmrc`:
 Before using the SDK, you'll need:
 
 1. **Bearer Token** - A valid authentication token from Google Labs
-2. **reCAPTCHA Provider** (Required) - An API key from Regotcha, CapSolver, or YesCaptcha for solving reCAPTCHA challenges. Both image and video generation require reCAPTCHA verification.
+2. **reCAPTCHA Provider** (Required) - A reCAPTCHA solver for all generation requests. Recommended: **Chrome** (real browser, highest scores) or **YesCaptcha** (cloud, no browser needed).
 3. **Project ID** - Your Google Labs project identifier (optional, can be provided per-request or auto-resolved)
 
 ## Basic Setup
@@ -55,8 +55,7 @@ const client = new GLabsClient({
 
   // Required: reCAPTCHA solver configuration (for both image and video generation)
   recaptcha: {
-    provider: 'regotcha', // Recommended: 'regotcha' or 'capsolver'
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome', // Recommended: 'chrome' or 'yescaptcha'
   },
 
   // Optional: Account tier (defaults to 'pro')
@@ -81,8 +80,8 @@ We recommend using environment variables for sensitive configuration:
 # .env
 GLABS_BEARER_TOKEN=your-bearer-token
 GLABS_PROJECT_ID=your-project-id
+RECAPTCHA_PROVIDER=chrome
 RECAPTCHA_API_KEY=your-recaptcha-api-key
-RECAPTCHA_PROVIDER=regotcha
 ```
 
 ```typescript
@@ -92,8 +91,8 @@ const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
   projectId: process.env.GLABS_PROJECT_ID,
   recaptcha: {
-    provider: process.env.RECAPTCHA_PROVIDER as 'regotcha' | 'capsolver',
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome', // or 'yescaptcha'
+    apiKey: process.env.RECAPTCHA_API_KEY,
   },
 });
 ```

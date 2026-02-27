@@ -1,0 +1,306 @@
+---
+title: CLI
+description: Command-line interface for terminal-based SDK access
+---
+
+# CLI
+
+The `glabs` CLI provides terminal-based access to all SDK features — image generation, video generation, project management, Whisk, and an OpenAI-compatible server.
+
+## Installation
+
+The CLI is included with the SDK:
+
+```bash
+npm install -g @getvrex/glabs-sdk
+```
+
+Or run via npx:
+
+```bash
+npx @getvrex/glabs-sdk --help
+```
+
+## Configuration
+
+The CLI reads from `~/.glabs/config.json` with environment variable overrides.
+
+### Set Config Values
+
+```bash
+glabs config set --bearer-token "your-bearer-token"
+glabs config set --session-token "your-session-token"
+glabs config set --account-tier pro
+glabs config set --recaptcha-provider chrome
+glabs config set --recaptcha-api-key "your-api-key"
+glabs config set --output-dir ./output
+```
+
+Multiple values in one command:
+
+```bash
+glabs config set \
+  --bearer-token "your-token" \
+  --session-token "your-session-token" \
+  --account-tier pro \
+  --recaptcha-provider chrome
+```
+
+### View Config
+
+```bash
+glabs config show
+```
+
+Displays all values with sensitive tokens masked.
+
+### Environment Variable Overrides
+
+Environment variables take precedence over the config file:
+
+| Variable | Config Key |
+|----------|------------|
+| `GLABS_BEARER_TOKEN` | `bearerToken` |
+| `GLABS_SESSION_TOKEN` | `sessionToken` |
+| `GLABS_ACCOUNT_TIER` | `accountTier` |
+| `GLABS_PROJECT_ID` | `projectId` |
+| `GLABS_RECAPTCHA_PROVIDER` | `recaptchaProvider` |
+| `GLABS_RECAPTCHA_API_KEY` | `recaptchaApiKey` |
+| `GLABS_WHISK_COOKIE` | `whiskCookie` |
+| `GLABS_OUTPUT_DIR` | `outputDir` |
+
+## Commands
+
+### Images
+
+#### Generate
+
+```bash
+glabs images generate -p "A sunset over mountains" -a 16:9
+glabs images generate -p "A cute robot" -n 4 -a 1:1 -o ./my-images
+glabs images generate -p "A landscape" -m nanobanana2 --seed 42
+glabs images generate -p "A portrait" --json  # raw JSON output
+```
+
+| Option | Description |
+|--------|-------------|
+| `-p, --prompt` | Image prompt (required) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` (default: `1:1`) |
+| `-n, --count` | Number of images 1-4 (default: 1) |
+| `-m, --model` | Image model (`nanobanana`, `nanobananapro`, `nanobanana2`) |
+| `--seed` | Random seed |
+| `-o, --output-dir` | Output directory (default: `./output`) |
+| `--json` | Output raw JSON instead of saving files |
+
+#### Upload
+
+```bash
+glabs images upload -f photo.jpg
+glabs images upload -f photo.jpg --json
+```
+
+| Option | Description |
+|--------|-------------|
+| `-f, --file` | Image file path (required) |
+| `--json` | Output raw JSON |
+
+#### Upsample
+
+```bash
+glabs images upsample --media-id "abc123" --resolution 4K
+glabs images upsample --media-id "abc123" --resolution 2K -o ./upscaled
+```
+
+| Option | Description |
+|--------|-------------|
+| `--media-id` | Media ID to upsample (required) |
+| `--resolution` | `2K` \| `4K` (default: `4K`) |
+| `-o, --output-dir` | Output directory |
+| `--json` | Output raw JSON |
+
+#### Credits
+
+```bash
+glabs images credits
+glabs images credits --json
+```
+
+### Videos
+
+#### Text-to-Video
+
+```bash
+glabs videos generate -p "A cinematic drone shot" -a 16:9
+glabs videos generate -p "A cityscape" --mode fast
+```
+
+| Option | Description |
+|--------|-------------|
+| `-p, --prompt` | Video prompt (required) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` (default: `16:9`) |
+| `--mode` | `quality` \| `fast` (default: per tier) |
+| `--seed` | Random seed |
+| `--json` | Output raw JSON |
+
+#### Image-to-Video
+
+```bash
+glabs videos i2v -p "Camera pans slowly" --start-media-id "abc123"
+glabs videos i2v -p "Motion" --start-media-id "abc" --end-media-id "xyz"
+```
+
+| Option | Description |
+|--------|-------------|
+| `-p, --prompt` | Video prompt (required) |
+| `--start-media-id` | Start frame media ID (required) |
+| `--end-media-id` | End frame media ID (first+last frame mode) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
+| `--seed` | Random seed |
+
+#### Extend
+
+```bash
+glabs videos extend --media-id "abc123" -p "Continue the scene with a sunset"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--media-id` | Video media ID (required) |
+| `-p, --prompt` | Extension prompt (required) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
+
+#### Reshoot
+
+```bash
+glabs videos reshoot --media-id "abc123" --motion-type RESHOOT_MOTION_TYPE_FORWARD
+```
+
+| Option | Description |
+|--------|-------------|
+| `--media-id` | Video media ID (required) |
+| `--motion-type` | Camera motion type (required) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
+
+**Available motion types:**
+
+Camera Control: `UP`, `DOWN`, `LEFT_TO_RIGHT`, `RIGHT_TO_LEFT`, `FORWARD`, `BACKWARD`, `DOLLY_IN_ZOOM_OUT`, `DOLLY_OUT_ZOOM_IN_LARGE`
+
+Camera Position: `STATIONARY_UP`, `STATIONARY_DOWN`, `STATIONARY_LEFT_LARGE`, `STATIONARY_RIGHT_LARGE`, `STATIONARY_DOLLY_IN_ZOOM_OUT`, `STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
+
+All prefixed with `RESHOOT_MOTION_TYPE_`.
+
+#### Upsample Video
+
+```bash
+glabs videos upsample --media-id "abc123" --resolution 4k
+```
+
+| Option | Description |
+|--------|-------------|
+| `--media-id` | Video media ID (required) |
+| `--resolution` | `1080p` \| `4k` (default: `4k`) |
+
+#### Check Status
+
+```bash
+glabs videos status --operation-name "operations/xyz"
+glabs videos status --media-id "abc123"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--operation-name` | Operation name |
+| `--media-id` | Media ID |
+| `--project-id` | Project ID |
+
+#### Poll Until Done
+
+Polls until completion and auto-downloads the video:
+
+```bash
+glabs videos poll --operation-name "operations/xyz" -o ./videos
+glabs videos poll --media-id "abc123"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--operation-name` | Operation name |
+| `--media-id` | Media ID |
+| `--project-id` | Project ID |
+| `-o, --output-dir` | Output directory (default: `./output`) |
+
+### Projects
+
+```bash
+glabs projects list
+glabs projects list --page-size 50 --json
+glabs projects get <project-id>
+```
+
+### Whisk
+
+Generate images via Google Whisk API (Imagen 3.5):
+
+```bash
+glabs whisk generate -p "A cute robot" -a LANDSCAPE -o ./whisk-output
+```
+
+| Option | Description |
+|--------|-------------|
+| `-p, --prompt` | Image prompt (required) |
+| `-a, --aspect-ratio` | `SQUARE` \| `PORTRAIT` \| `LANDSCAPE` (also accepts `1:1`, `9:16`, `16:9`) |
+| `--seed` | Random seed |
+| `-o, --output-dir` | Output directory |
+| `--json` | Output raw JSON |
+
+Requires `--whisk-cookie` set in config.
+
+### Serve (OpenAI Server)
+
+Start an OpenAI-compatible HTTP server:
+
+```bash
+glabs serve
+glabs serve --port 3000 --host 127.0.0.1 --api-key "sk-my-key"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--port` | Listen port (default: `8000`) |
+| `--host` | Bind host (default: `0.0.0.0`) |
+| `--api-key` | Optional API key for auth |
+
+See [OpenAI Server](/docs/glabs-sdk/openai-server) for endpoint details.
+
+## Typical Workflow
+
+```bash
+# 1. Configure
+glabs config set --bearer-token "token" --recaptcha-provider chrome
+
+# 2. Generate an image
+glabs images generate -p "A mountain landscape" -a 16:9
+
+# 3. Upload for video use
+glabs images upload -f output/image-1709123456.png
+
+# 4. Generate video from image
+glabs videos i2v -p "Camera slowly pans right" --start-media-id "abc123"
+
+# 5. Poll and download
+glabs videos poll --operation-name "operations/xyz" -o ./videos
+
+# 6. Upscale to 4K
+glabs videos upsample --media-id "def456" --resolution 4k
+```
+
+## Output
+
+By default, the CLI saves generated files to `./output` (or configured `--output-dir`):
+
+- Images: `image-{timestamp}.png`
+- Videos: `video-{timestamp}.mp4`
+- Whisk images: `whisk-{timestamp}.png`
+- Upsampled images: `upsample-{timestamp}.png`
+
+Use `--json` on any command to output raw JSON to stdout instead of saving files.

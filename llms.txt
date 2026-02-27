@@ -25,8 +25,7 @@ const client = new GLabsClient({
   accountTier: 'pro',
   // projectId is optional - auto-selects first available if not provided
   recaptcha: {
-    provider: 'regotcha', // or 'capsolver'
-    apiKey: 'your-api-key',
+    provider: 'chrome', // recommended: chrome or yescaptcha
   },
 });
 
@@ -78,13 +77,16 @@ const client = new GLabsClient(config: GLabsClientConfig);
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `provider` | `'regotcha' \| 'capsolver' \| 'yescaptcha' \| 'custom' \| 'veo3solver'` | Yes | Solver provider |
-| `apiKey` | `string` | Conditional | API key (required for regotcha, capsolver, yescaptcha) |
+| `provider` | `'chrome' \| 'yescaptcha' \| 'playwright' \| 'regotcha' \| 'capsolver' \| 'veo3solver' \| 'custom'` | Yes | Solver provider |
+| `apiKey` | `string` | Conditional | API key (required for yescaptcha, regotcha, capsolver) |
+| `chromeOptions` | `object` | No | Chrome browser config (for chrome provider) |
+| `playwrightOptions` | `object` | No | Playwright browser config |
 | `proxy` | `string` | No | Proxy address (capsolver, custom) |
 | `maxRetries` | `number` | No | Max polling retries |
 | `customEndpoint` | `string` | Conditional | Endpoint URL (required for custom provider) |
 | `jwtToken` | `string` | Conditional | JWT token (required for veo3solver) |
 | `staticToken` | `string` | No | Static token to use directly (bypasses provider, useful for testing) |
+| `fallback` | `RecaptchaConfig` | No | Fallback provider config |
 
 ### Static Methods
 
@@ -679,8 +681,7 @@ const client = new GLabsClient({
   accountTier: 'pro',
   // projectId is optional - auto-selects first available project if sessionToken provided
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome', // recommended: chrome or yescaptcha
   },
 });
 
@@ -757,10 +758,15 @@ async function generateVideo() {
 ## reCAPTCHA Providers
 
 Recommended providers (in order):
-1. **regotcha** - Best success rate
-2. **capsolver** - Reliable alternative
+1. **chrome** — Real Chrome browser, highest scores, no API costs
+2. **yescaptcha** — Reliable cloud service, no local browser needed
 
-Provider endpoints:
-- regotcha: `https://api.regotcha.com`
-- capsolver: `https://api.capsolver.com`
-- yescaptcha: `https://api.yescaptcha.com`
+Other providers: playwright, regotcha, capsolver, veo3solver, custom
+
+Fallback chains supported:
+```typescript
+recaptcha: {
+  provider: 'chrome',
+  fallback: { provider: 'yescaptcha', apiKey: 'key' },
+}
+```

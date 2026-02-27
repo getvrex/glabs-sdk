@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "getting-started",
+    "cli",
     "client",
     "image-generation",
     "video-generation",

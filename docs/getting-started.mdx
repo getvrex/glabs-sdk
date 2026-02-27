@@ -46,8 +46,7 @@ const client = new GLabsClient({
   sessionToken: process.env.GLABS_SESSION_TOKEN,
   accountTier: 'pro',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome',  // recommended: chrome or yescaptcha
   },
 });
 ```
@@ -59,7 +58,7 @@ const client = new GLabsClient({
 GLABS_BEARER_TOKEN=your-bearer-token
 GLABS_SESSION_TOKEN=your-session-token
 GLABS_PROJECT_ID=your-project-id
-RECAPTCHA_PROVIDER=regotcha
+RECAPTCHA_PROVIDER=chrome
 RECAPTCHA_API_KEY=your-recaptcha-api-key
 ```
 
@@ -71,8 +70,8 @@ const client = new GLabsClient({
   sessionToken: process.env.GLABS_SESSION_TOKEN,
   projectId: process.env.GLABS_PROJECT_ID,
   recaptcha: {
-    provider: process.env.RECAPTCHA_PROVIDER as 'regotcha' | 'capsolver',
-    apiKey: process.env.RECAPTCHA_API_KEY!,
+    provider: 'chrome',  // or 'yescaptcha'
+    apiKey: process.env.RECAPTCHA_API_KEY,
   },
 });
 ```

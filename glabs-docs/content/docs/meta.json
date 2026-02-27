@@ -5,6 +5,7 @@
     "---Introduction---",
     "index",
     "getting-started",
+    "cli",
     "---Usage---",
     "client",
     "image-generation",
