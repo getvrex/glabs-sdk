@@ -124,10 +124,18 @@ export class VideoService {
           );
           throw parseGoogleApiError(errorData, response.status);
         }
-        this.logger.warn(
-          `[Video] ${operationName}: reCAPTCHA evaluation failed (attempt ${attempt}/${maxEvalRetries}), retrying with new token...`
+
+        if (attempt < maxEvalRetries) {
+          this.logger.warn(
+            `[Video] ${operationName}: reCAPTCHA evaluation failed (attempt ${attempt}/${maxEvalRetries}), retrying with new token...`
+          );
+          continue;
+        }
+
+        this.logger.error(
+          `[Video] ${operationName}: reCAPTCHA evaluation failed after ${maxEvalRetries} attempts; giving up`
         );
-        continue;
+        throw parseGoogleApiError(errorData, response.status);
       }
 
       // Other error - throw immediately
