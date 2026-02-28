@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.2.0](https://github.com/getvrex/glabs-sdk/compare/v2.1.1...v2.2.0) (2026-02-28)
+
+
+### Features
+
+* **auth:** add automated token extraction via Playwright ([3dbb1e8](https://github.com/getvrex/glabs-sdk/commit/3dbb1e8e3e844cf2cb0ff76e139cd8c3a198a2ff))
+* **cli:** add @getvrex/glabs-cli package for global CLI install ([3d5a880](https://github.com/getvrex/glabs-sdk/commit/3d5a880393dc908cf6d4149fc9412daef97a618d))
+* **cli:** add i2i reference flags to images generate ([8a7beef](https://github.com/getvrex/glabs-sdk/commit/8a7beefec01328331799317e10479721306006fe))
+* **cli:** add r2v subcommand for reference-images-to-video generation ([5b78584](https://github.com/getvrex/glabs-sdk/commit/5b78584e4ac08cb66315cd28063b8afa2743c4c3))
+* **cli:** support --mode and --account-tier for i2v/extend video commands ([7cfa688](https://github.com/getvrex/glabs-sdk/commit/7cfa68810e96d57bd9bc3996e4008f8809ab147c))
+* **openai-server:** add in-memory generation queue with concurrency limit ([91a2d82](https://github.com/getvrex/glabs-sdk/commit/91a2d82a1510b69f7752a072bc0a175c314a0458))
+* **skills:** add glabs-cli skill for CLI command reference ([13e6458](https://github.com/getvrex/glabs-sdk/commit/13e6458687dc8fdce1c976e735228599e20e7b9c))
+* **video:** default ultra landscape t2v/i2v to fast-ultra models ([20aa46a](https://github.com/getvrex/glabs-sdk/commit/20aa46a68c81bb3c4db24035e8419d9f17da1393))
+* **video:** default ultra portrait i2v to fast portrait ultra model ([99abd29](https://github.com/getvrex/glabs-sdk/commit/99abd29f60686944b98b7bf514aab05748ee3183))
+* **video:** default ultra portrait t2v to fast portrait ultra model ([f3301d7](https://github.com/getvrex/glabs-sdk/commit/f3301d7f91a469eb0193833b113af6772d8b164f))
+
 ## [2.1.1](https://github.com/getvrex/glabs-sdk/compare/v2.1.0...v2.1.1) (2026-02-27)
 
 
