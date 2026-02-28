@@ -1,5 +1,5 @@
 /**
- * glabs videos generate | i2v | extend | reshoot | upsample | status | poll
+ * glabs videos generate | i2v | r2v | extend | reshoot | upsample | status | poll
  */
 
 import { parseArgs } from "node:util";
@@ -26,6 +26,7 @@ const HELP = `Usage: glabs videos <subcommand> [options]
 Subcommands:
   generate    Text-to-video generation
   i2v         Image-to-video generation
+  r2v         Reference images to video (1-3 ingredient images)
   extend      Extend a video
   reshoot     Camera reshoot on a video
   upsample    Upscale a video
@@ -45,6 +46,10 @@ Generate options:
 I2V options:
   --start-media-id <id>        Start frame media ID (required)
   --end-media-id <id>          End frame media ID
+  --mode <quality|fast>        Video mode (default: quality)
+
+R2V options:
+  --ref-media-id <id>          Reference image media ID (required, up to 3x)
   --mode <quality|fast>        Video mode (default: quality)
 
 Extend options:
@@ -91,6 +96,9 @@ export async function run(args: string[]) {
         break;
       case "i2v":
         await runI2V(args.slice(1), client, sessionId);
+        break;
+      case "r2v":
+        await runR2V(args.slice(1), client, sessionId);
         break;
       case "extend":
         await runExtend(args.slice(1), client, sessionId);
@@ -175,6 +183,39 @@ async function runI2V(args: string[], client: any, sessionId: string) {
     prompt: values.prompt,
     startMediaId: values["start-media-id"],
     endMediaId: values["end-media-id"],
+    sessionId,
+    aspectRatio: (values["aspect-ratio"] as AspectRatio) ?? "16:9",
+    videoMode: values.mode as VideoMode | undefined,
+    accountTier: values["account-tier"] as AccountTier | undefined,
+    seed: values.seed ? Number(values.seed) : undefined,
+  });
+
+  if (values.json) { printJson(result); return; }
+  printOperation(result);
+}
+
+async function runR2V(args: string[], client: any, sessionId: string) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      prompt: { type: "string", short: "p" },
+      "ref-media-id": { type: "string", multiple: true },
+      "aspect-ratio": { type: "string", short: "a" },
+      mode: { type: "string" },
+      "account-tier": { type: "string" },
+      seed: { type: "string" },
+      json: { type: "boolean", default: false },
+    },
+    strict: true,
+  });
+
+  if (!values.prompt) fatal("--prompt is required");
+  const refIds = values["ref-media-id"];
+  if (!refIds || refIds.length === 0) fatal("--ref-media-id is required (1-3 images)");
+
+  const result = await client.videos.generateReferenceImagesVideo({
+    prompt: values.prompt,
+    referenceMediaIds: refIds,
     sessionId,
     aspectRatio: (values["aspect-ratio"] as AspectRatio) ?? "16:9",
     videoMode: values.mode as VideoMode | undefined,
