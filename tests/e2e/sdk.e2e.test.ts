@@ -17,6 +17,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { GLabsClient, GLabsError } from "../../src";
+import { getVideoApiConfig } from "../../src/config/tier-config";
 import type { RecaptchaProvider } from "../../src/types";
 
 // Test configuration from environment
@@ -54,7 +55,7 @@ describe("GLabs SDK E2E Tests", () => {
     client = new GLabsClient({
       bearerToken: config.bearerToken!,
       sessionToken: config.sessionToken,
-      accountTier: "pro",
+      accountTier: "ultra",
       recaptcha: {
         provider: config.recaptchaProvider,
         apiKey: config.recaptchaApiKey,
@@ -100,7 +101,7 @@ describe("GLabs SDK E2E Tests", () => {
   describe("Client Configuration", () => {
     it.skipIf(!hasCredentials)("should create client with valid config", () => {
       expect(client).toBeDefined();
-      expect(client.accountTier).toBe("pro");
+      expect(client.accountTier).toBe("ultra");
     });
 
     it.skipIf(!hasCredentials)("should expose projectId getter", () => {
@@ -235,7 +236,7 @@ describe("GLabs SDK E2E Tests", () => {
 
         // Step 1: T2I
         const t2i = await client.images.generate({
-          prompt: "A cinematic portrait scene with soft lighting",
+          prompt: "A funny walrus in tiny sunglasses doing a dramatic movie pose, vertical portrait",
           sessionId,
           aspectRatio,
           projectId,
@@ -248,7 +249,7 @@ describe("GLabs SDK E2E Tests", () => {
 
         // Step 2: I2I (use previous image as reference)
         const i2i = await client.images.generate({
-          prompt: "Keep the same composition, add subtle neon accents and richer contrast",
+          prompt: "Keep the same funny walrus, add a banana-shaped hat and playful comic vibe",
           sessionId,
           aspectRatio,
           projectId,
@@ -262,12 +263,16 @@ describe("GLabs SDK E2E Tests", () => {
         imageMediaId = i2iMediaId;
 
         // Step 3: I2V (use last image as first frame)
+        const i2vCfg = getVideoApiConfig("image-to-video", "ultra", aspectRatio, "fast");
+        expect(i2vCfg.videoModelKey).toBe("veo_3_1_i2v_s_fast_portrait_ultra");
+
         const i2v = await client.videos.generateImageToVideo({
-          prompt: "Subtle cinematic motion, slow push-in, natural camera movement",
+          prompt: "Animate the funny walrus with a tiny dance and goofy camera wobble, keep it cute",
           startMediaId: i2iMediaId!,
           sessionId,
           aspectRatio,
           projectId,
+          accountTier: "ultra",
           videoMode: "fast",
         });
 
