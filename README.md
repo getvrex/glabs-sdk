@@ -8,13 +8,6 @@ TypeScript SDK for Google Labs AI media generation APIs (Imagen 4, Veo 3).
 npm install @getvrex/glabs-sdk
 ```
 
-**Note:** This is a private package. Configure your `.npmrc`:
-
-```
-@getvrex:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
-
 ## Quick Start
 
 ```typescript

@@ -69,6 +69,7 @@
     "url": "https://github.com/getvrex/glabs-sdk"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   }
 }
