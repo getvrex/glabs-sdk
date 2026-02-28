@@ -1,25 +1,43 @@
 ---
 title: GLabs SDK
-description: TypeScript SDK for Google Labs AI media generation APIs
+description: TypeScript SDK and CLI for Google Labs AI media generation APIs
 ---
 
 import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
 
 # GLabs SDK
 
-`@getvrex/glabs-sdk` is a TypeScript SDK for interacting with Google Labs AI APIs for image and video generation.
+TypeScript SDK and CLI for Google Labs AI media generation — **Imagen 4** image generation and **Veo 3** video generation.
 
-## Features
+## Packages
 
-- **Image Generation** - Generate AI images using Google's Imagen models
-- **Video Generation** - Create videos using Google's Veo models
-- **Multiple Video Modes** - Support for text-to-video, image-to-video, video extension, camera control, and more
-- **Account Tier Support** - Automatic handling of Free, Pro and Ultra tier differences
-- **reCAPTCHA Integration** - 7 providers: Chrome browser (recommended), YesCaptcha (recommended), Playwright, Regotcha, CapSolver, Veo3Solver, Custom
-- **Type-Safe** - Full TypeScript support with exported types
-- **Retry Logic** - Automatic retry on network errors
+| Package | Install |
+|---------|---------|
+| `@getvrex/glabs-sdk` | `npm install @getvrex/glabs-sdk` |
+| `@getvrex/glabs-cli` | `npm install -g @getvrex/glabs-cli` |
 
 ## Quick Start
+
+### CLI
+
+```bash
+npm install -g @getvrex/glabs-cli
+
+# Setup
+glabs auth extract --email user@gmail.com --password "pass" --save
+
+# Generate an image
+glabs images generate -p "A sunset over mountains" -a 16:9
+
+# Generate a video
+glabs videos generate -p "A cinematic drone shot" -a 16:9
+
+# Poll and download
+glabs videos poll --operation-name "operations/xyz" -o ./videos
+```
+
+### SDK
 
 ```typescript
 import { GLabsClient } from '@getvrex/glabs-sdk';
@@ -27,38 +45,44 @@ import { GLabsClient } from '@getvrex/glabs-sdk';
 const client = new GLabsClient({
   bearerToken: 'your-bearer-token',
   accountTier: 'pro',
-  projectId: 'your-project-id',
-  recaptcha: {
-    provider: 'chrome',  // recommended: chrome or yescaptcha
-  },
+  recaptcha: { provider: 'chrome' },
 });
 
 // Generate an image
-const imageResult = await client.images.generate({
+const image = await client.images.generate({
   prompt: 'A beautiful sunset over mountains',
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
 });
 
 // Generate a video
-const videoOp = await client.videos.generateTextToVideo({
+const operation = await client.videos.generateTextToVideo({
   prompt: 'A cinematic drone shot of a city at sunset',
   sessionId: GLabsClient.generateSessionId(),
   aspectRatio: '16:9',
 });
 
-// Check video status
-const status = await client.videos.checkStatus({
-  operationName: videoOp.operationName,
+// Poll until ready
+const video = await client.videos.pollOperation({
+  operationName: operation.operationName,
 });
 ```
+
+## Features
+
+- **Image Generation** — Imagen 4 with batch generation (up to 4), 2K/4K upscaling, reference images
+- **Video Generation** — Veo 3/3.1 text-to-video, image-to-video, multi-reference, extend, camera reshoot
+- **CLI** — Full terminal access to all features, OpenAI-compatible server mode
+- **Token Management** — Auto token refresh, concurrent deduplication, 401 retry
+- **reCAPTCHA** — 7 providers with fallback chains
+- **Type-Safe** — Full TypeScript support with exported types
 
 ## Next Steps
 
 <Cards>
   <Card title="Getting Started" href="/docs/getting-started" description="Installation and setup guide" />
-  <Card title="CLI" href="/docs/cli" description="Terminal-based SDK access" />
-  <Card title="Client Configuration" href="/docs/client" description="Configure the GLabs client" />
-  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen" />
-  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo" />
+  <Card title="CLI" href="/docs/cli" description="Terminal-based access to all features" />
+  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen 4" />
+  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo 3" />
+  <Card title="API Reference" href="/docs/api-reference" description="Complete API reference" />
 </Cards>

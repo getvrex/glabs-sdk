@@ -1,97 +1,103 @@
 ---
 title: Getting Started
-description: Install and configure the GLabs SDK
+description: Install and configure the GLabs SDK and CLI
 ---
 
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
 # Getting Started
 
-This guide will help you install and configure the GLabs SDK in your project.
-
 ## Installation
 
-Install the package using your preferred package manager:
+<Tabs items={['CLI', 'SDK']}>
+  <Tab value="CLI">
+    ```bash
+    npm install -g @getvrex/glabs-cli
+    ```
 
-```bash
-# Using bun
-bun add @getvrex/glabs-sdk
+    This installs the `glabs` command globally.
+  </Tab>
+  <Tab value="SDK">
+    ```bash
+    npm install @getvrex/glabs-sdk
+    ```
 
-# Using npm
-npm install @getvrex/glabs-sdk
-
-# Using pnpm
-pnpm add @getvrex/glabs-sdk
-
-# Using yarn
-yarn add @getvrex/glabs-sdk
-```
-
-<Callout type="info">
-This is a private package. Configure your `.npmrc`:
-```
-@getvrex:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
-</Callout>
+    For programmatic usage in your TypeScript/JavaScript projects.
+  </Tab>
+</Tabs>
 
 ## Prerequisites
 
-Before using the SDK, you'll need:
+Before using the SDK or CLI, you'll need:
 
-1. **Bearer Token** - A valid authentication token from Google Labs
-2. **reCAPTCHA Provider** (Required) - A reCAPTCHA solver for all generation requests. Recommended: **Chrome** (real browser, highest scores) or **YesCaptcha** (cloud, no browser needed).
-3. **Project ID** - Your Google Labs project identifier (optional, can be provided per-request or auto-resolved)
+1. **Bearer Token** — Authentication token from Google Labs
+2. **reCAPTCHA Provider** — Required for all generation requests. Recommended: **Chrome** (real browser, highest scores) or **YesCaptcha** (cloud, no browser needed)
+3. **Project ID** — Google Labs project identifier (optional, auto-resolved if omitted)
 
-## Basic Setup
+## CLI Setup
+
+The fastest way to get started:
+
+```bash
+# Extract tokens automatically from Google Labs
+glabs auth extract --email user@gmail.com --password "pass" --save
+
+# Or configure manually
+glabs config set \
+  --bearer-token "your-token" \
+  --session-token "your-session-token" \
+  --account-tier pro \
+  --recaptcha-provider chrome
+```
+
+Verify your config:
+
+```bash
+glabs config show
+```
+
+Then start generating:
+
+```bash
+glabs images generate -p "A mountain landscape" -a 16:9
+glabs videos generate -p "A cinematic drone shot" -a 16:9
+```
+
+## SDK Setup
 
 ```typescript
 import { GLabsClient } from '@getvrex/glabs-sdk';
 
 const client = new GLabsClient({
-  // Required: Your authentication token
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
-
-  // Required: reCAPTCHA solver configuration (for both image and video generation)
-  recaptcha: {
-    provider: 'chrome', // Recommended: 'chrome' or 'yescaptcha'
-  },
-
-  // Optional: Account tier (defaults to 'pro')
+  sessionToken: process.env.GLABS_SESSION_TOKEN,
   accountTier: 'pro',
-
-  // Optional: Default project ID (auto-resolves if not provided)
-  projectId: process.env.GLABS_PROJECT_ID,
-
-  // Optional: Request timeout in milliseconds (default: 120000)
-  timeout: 120000,
-
-  // Optional: Custom logger
-  logger: console,
+  recaptcha: {
+    provider: 'chrome',
+  },
 });
 ```
 
-## Environment Variables
+### Environment Variables
 
 We recommend using environment variables for sensitive configuration:
 
 ```bash
 # .env
 GLABS_BEARER_TOKEN=your-bearer-token
+GLABS_SESSION_TOKEN=your-session-token
 GLABS_PROJECT_ID=your-project-id
-RECAPTCHA_PROVIDER=chrome
 RECAPTCHA_API_KEY=your-recaptcha-api-key
 ```
 
 ```typescript
-import { GLabsClient } from '@getvrex/glabs-sdk';
-
 const client = new GLabsClient({
   bearerToken: process.env.GLABS_BEARER_TOKEN!,
-  projectId: process.env.GLABS_PROJECT_ID,
+  sessionToken: process.env.GLABS_SESSION_TOKEN,
   recaptcha: {
-    provider: 'chrome', // or 'yescaptcha'
+    provider: 'chrome',
     apiKey: process.env.RECAPTCHA_API_KEY,
   },
 });
@@ -99,39 +105,26 @@ const client = new GLabsClient({
 
 ## Session Management
 
-Each API request requires a session ID. You can generate one using the static method:
+Each API request requires a session ID:
 
 ```typescript
 const sessionId = GLabsClient.generateSessionId();
 ```
 
-Or you can use your own UUID generation:
-
-```typescript
-import { randomUUID } from 'crypto';
-const sessionId = randomUUID();
-```
-
 ## Error Handling
-
-The SDK throws `GLabsError` for API errors:
 
 ```typescript
 import { GLabsClient, GLabsError } from '@getvrex/glabs-sdk';
 
 try {
-  const result = await client.images.generate({
+  await client.images.generate({
     prompt: 'test image',
     sessionId: GLabsClient.generateSessionId(),
     aspectRatio: '16:9',
   });
 } catch (error) {
   if (error instanceof GLabsError) {
-    console.error('API Error:', error.message);
-    console.error('Error Code:', error.code);
-    console.error('Status Code:', error.statusCode);
-  } else {
-    throw error;
+    console.error(`[${error.code}] ${error.message}`, error.statusCode);
   }
 }
 ```
@@ -139,7 +132,8 @@ try {
 ## Next Steps
 
 <Cards>
-  <Card title="Client Configuration" href="/docs/client" description="Advanced client options" />
-  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen" />
-  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo" />
+  <Card title="CLI Reference" href="/docs/cli" description="Full CLI command reference" />
+  <Card title="Client Configuration" href="/docs/client" description="Advanced SDK options" />
+  <Card title="Image Generation" href="/docs/image-generation" description="Generate images with Imagen 4" />
+  <Card title="Video Generation" href="/docs/video-generation" description="Create videos with Veo 3" />
 </Cards>

@@ -1,7 +1,9 @@
 ---
 title: CLI
-description: Command-line interface for terminal-based SDK access
+description: Command-line interface for Google Labs AI media generation
 ---
+
+import { Callout } from 'fumadocs-ui/components/callout';
 
 # CLI
 
@@ -9,21 +11,29 @@ The `glabs` CLI provides terminal-based access to all SDK features — image gen
 
 ## Installation
 
-The CLI is included with the SDK:
-
 ```bash
-npm install -g @getvrex/glabs-sdk
+npm install -g @getvrex/glabs-cli
 ```
 
-Or run via npx:
+Verify installation:
 
 ```bash
-npx @getvrex/glabs-sdk --help
+glabs --version
 ```
 
 ## Configuration
 
 The CLI reads from `~/.glabs/config.json` with environment variable overrides.
+
+### Quick Setup
+
+```bash
+# Extract tokens automatically
+glabs auth extract --email user@gmail.com --password "pass" --save
+
+# Or set tokens manually
+glabs config set --bearer-token "tok" --session-token "stok" --account-tier pro
+```
 
 ### Set Config Values
 
@@ -68,18 +78,38 @@ Environment variables take precedence over the config file:
 | `GLABS_RECAPTCHA_API_KEY` | `recaptchaApiKey` |
 | `GLABS_WHISK_COOKIE` | `whiskCookie` |
 | `GLABS_OUTPUT_DIR` | `outputDir` |
+| `GLABS_GOOGLE_EMAIL` | `googleEmail` |
+| `GLABS_GOOGLE_PASSWORD` | `googlePassword` |
+| `GLABS_BROWSERLESS_TOKEN` | `browserlessToken` |
 
 ## Commands
 
+### Auth
+
+#### auth extract
+
+Extract bearer + session tokens via browser automation:
+
+```bash
+glabs auth extract --email user@gmail.com --password "pass" --save
+glabs auth extract --email user@gmail.com --password "pass" --browserless-token "tok"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--email <email>` | Google email (or `GLABS_GOOGLE_EMAIL`) |
+| `--password <password>` | Google password (or `GLABS_GOOGLE_PASSWORD`) |
+| `--browserless-token <tok>` | Browserless.io token (omit for local browser) |
+| `--save` | Save tokens to `~/.glabs/config.json` |
+
 ### Images
 
-#### Generate
+#### images generate
 
 ```bash
 glabs images generate -p "A sunset over mountains" -a 16:9
 glabs images generate -p "A cute robot" -n 4 -a 1:1 -o ./my-images
 glabs images generate -p "A landscape" -m nanobanana2 --seed 42
-glabs images generate -p "A portrait" --json  # raw JSON output
 ```
 
 | Option | Description |
@@ -87,16 +117,16 @@ glabs images generate -p "A portrait" --json  # raw JSON output
 | `-p, --prompt` | Image prompt (required) |
 | `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` (default: `1:1`) |
 | `-n, --count` | Number of images 1-4 (default: 1) |
-| `-m, --model` | Image model (`nanobanana`, `nanobananapro`, `nanobanana2`) |
+| `-m, --model` | `nanobanana` \| `nanobananapro` \| `nanobanana2` |
 | `--seed` | Random seed |
+| `--reference-media-id` | Reference media ID (repeatable) |
 | `-o, --output-dir` | Output directory (default: `./output`) |
-| `--json` | Output raw JSON instead of saving files |
+| `--json` | Output raw JSON |
 
-#### Upload
+#### images upload
 
 ```bash
 glabs images upload -f photo.jpg
-glabs images upload -f photo.jpg --json
 ```
 
 | Option | Description |
@@ -104,11 +134,10 @@ glabs images upload -f photo.jpg --json
 | `-f, --file` | Image file path (required) |
 | `--json` | Output raw JSON |
 
-#### Upsample
+#### images upsample
 
 ```bash
 glabs images upsample --media-id "abc123" --resolution 4K
-glabs images upsample --media-id "abc123" --resolution 2K -o ./upscaled
 ```
 
 | Option | Description |
@@ -118,16 +147,15 @@ glabs images upsample --media-id "abc123" --resolution 2K -o ./upscaled
 | `-o, --output-dir` | Output directory |
 | `--json` | Output raw JSON |
 
-#### Credits
+#### images credits
 
 ```bash
 glabs images credits
-glabs images credits --json
 ```
 
 ### Videos
 
-#### Text-to-Video
+#### videos generate (text-to-video)
 
 ```bash
 glabs videos generate -p "A cinematic drone shot" -a 16:9
@@ -138,11 +166,12 @@ glabs videos generate -p "A cityscape" --mode fast
 |--------|-------------|
 | `-p, --prompt` | Video prompt (required) |
 | `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` (default: `16:9`) |
-| `--mode` | `quality` \| `fast` (default: per tier) |
+| `--mode` | `quality` \| `fast` |
+| `--account-tier` | Override tier |
 | `--seed` | Random seed |
 | `--json` | Output raw JSON |
 
-#### Image-to-Video
+#### videos i2v (image-to-video)
 
 ```bash
 glabs videos i2v -p "Camera pans slowly" --start-media-id "abc123"
@@ -157,7 +186,21 @@ glabs videos i2v -p "Motion" --start-media-id "abc" --end-media-id "xyz"
 | `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
 | `--seed` | Random seed |
 
-#### Extend
+#### videos r2v (reference-images-to-video)
+
+```bash
+glabs videos r2v -p "A scene with these characters" --ref-media-id abc --ref-media-id def
+```
+
+| Option | Description |
+|--------|-------------|
+| `-p, --prompt` | Video prompt (required) |
+| `--ref-media-id` | Reference image media ID (required, repeatable, 1-3) |
+| `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
+| `--mode` | `quality` \| `fast` |
+| `--seed` | Random seed |
+
+#### videos extend
 
 ```bash
 glabs videos extend --media-id "abc123" -p "Continue the scene with a sunset"
@@ -169,7 +212,7 @@ glabs videos extend --media-id "abc123" -p "Continue the scene with a sunset"
 | `-p, --prompt` | Extension prompt (required) |
 | `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
 
-#### Reshoot
+#### videos reshoot
 
 ```bash
 glabs videos reshoot --media-id "abc123" --motion-type RESHOOT_MOTION_TYPE_FORWARD
@@ -181,15 +224,12 @@ glabs videos reshoot --media-id "abc123" --motion-type RESHOOT_MOTION_TYPE_FORWA
 | `--motion-type` | Camera motion type (required) |
 | `-a, --aspect-ratio` | `16:9` \| `9:16` \| `1:1` |
 
-**Available motion types:**
+**Motion types** (all prefixed `RESHOOT_MOTION_TYPE_`):
 
-Camera Control: `UP`, `DOWN`, `LEFT_TO_RIGHT`, `RIGHT_TO_LEFT`, `FORWARD`, `BACKWARD`, `DOLLY_IN_ZOOM_OUT`, `DOLLY_OUT_ZOOM_IN_LARGE`
+- Camera: `UP`, `DOWN`, `LEFT_TO_RIGHT`, `RIGHT_TO_LEFT`, `FORWARD`, `BACKWARD`, `DOLLY_IN_ZOOM_OUT`, `DOLLY_OUT_ZOOM_IN_LARGE`
+- Stationary: `STATIONARY_UP`, `STATIONARY_DOWN`, `STATIONARY_LEFT_LARGE`, `STATIONARY_RIGHT_LARGE`, `STATIONARY_DOLLY_IN_ZOOM_OUT`, `STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
 
-Camera Position: `STATIONARY_UP`, `STATIONARY_DOWN`, `STATIONARY_LEFT_LARGE`, `STATIONARY_RIGHT_LARGE`, `STATIONARY_DOLLY_IN_ZOOM_OUT`, `STATIONARY_DOLLY_OUT_ZOOM_IN_LARGE`
-
-All prefixed with `RESHOOT_MOTION_TYPE_`.
-
-#### Upsample Video
+#### videos upsample
 
 ```bash
 glabs videos upsample --media-id "abc123" --resolution 4k
@@ -200,20 +240,14 @@ glabs videos upsample --media-id "abc123" --resolution 4k
 | `--media-id` | Video media ID (required) |
 | `--resolution` | `1080p` \| `4k` (default: `4k`) |
 
-#### Check Status
+#### videos status
 
 ```bash
 glabs videos status --operation-name "operations/xyz"
 glabs videos status --media-id "abc123"
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--operation-name` | Operation name |
-| `--media-id` | Media ID |
-| `--project-id` | Project ID |
-
-#### Poll Until Done
+#### videos poll
 
 Polls until completion and auto-downloads the video:
 
@@ -253,7 +287,9 @@ glabs whisk generate -p "A cute robot" -a LANDSCAPE -o ./whisk-output
 | `-o, --output-dir` | Output directory |
 | `--json` | Output raw JSON |
 
-Requires `--whisk-cookie` set in config.
+<Callout type="info">
+Requires `whiskCookie` set in config: `glabs config set --whisk-cookie "cookie"`
+</Callout>
 
 ### Serve (OpenAI Server)
 
@@ -261,7 +297,7 @@ Start an OpenAI-compatible HTTP server:
 
 ```bash
 glabs serve
-glabs serve --port 3000 --host 127.0.0.1 --api-key "sk-my-key"
+glabs serve --port 3000 --host 127.0.0.1 --api-key "sk-my-key" --max-concurrent 8
 ```
 
 | Option | Description |
@@ -269,14 +305,15 @@ glabs serve --port 3000 --host 127.0.0.1 --api-key "sk-my-key"
 | `--port` | Listen port (default: `8000`) |
 | `--host` | Bind host (default: `0.0.0.0`) |
 | `--api-key` | Optional API key for auth |
+| `--max-concurrent` | Max concurrent tasks (default: `4`) |
 
-See [OpenAI Server](/docs/glabs-sdk/openai-server) for endpoint details.
+Endpoints: `POST /v1/chat/completions`, `GET /v1/models`
 
 ## Typical Workflow
 
 ```bash
-# 1. Configure
-glabs config set --bearer-token "token" --recaptcha-provider chrome
+# 1. Setup
+glabs auth extract --email user@gmail.com --password "pass" --save
 
 # 2. Generate an image
 glabs images generate -p "A mountain landscape" -a 16:9
@@ -294,13 +331,15 @@ glabs videos poll --operation-name "operations/xyz" -o ./videos
 glabs videos upsample --media-id "def456" --resolution 4k
 ```
 
-## Output
+## Output Files
 
-By default, the CLI saves generated files to `./output` (or configured `--output-dir`):
+Default output dir: `./output` (or `--output-dir` / config `outputDir`).
 
-- Images: `image-{timestamp}.png`
-- Videos: `video-{timestamp}.mp4`
-- Whisk images: `whisk-{timestamp}.png`
-- Upsampled images: `upsample-{timestamp}.png`
+| Type | Filename Pattern |
+|------|-----------------|
+| Images | `image-{timestamp}.png` |
+| Videos | `video-{timestamp}.mp4` |
+| Whisk | `whisk-{timestamp}.png` |
+| Upsampled | `upsample-{timestamp}.png` |
 
-Use `--json` on any command to output raw JSON to stdout instead of saving files.
+Use `--json` on any command to output raw JSON to stdout instead.

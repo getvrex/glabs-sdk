@@ -16,10 +16,16 @@ export default function HomePage() {
           </h1>
 
           <p className="mb-8 text-xl text-muted-foreground">
-            TypeScript SDK for Google Labs AI media generation APIs.
+            TypeScript SDK and CLI for Google Labs AI media generation.
             <br />
-            Generate stunning images with Imagen and videos with Veo.
+            Generate stunning images with Imagen 4 and videos with Veo 3.
           </p>
+
+          {/* Install snippet */}
+          <div className="mb-8 inline-flex items-center gap-3 rounded-lg border bg-muted/50 px-5 py-2.5 font-mono text-sm">
+            <span className="text-muted-foreground">$</span>
+            <span>npm install -g @getvrex/glabs-cli</span>
+          </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link
@@ -27,6 +33,14 @@ export default function HomePage() {
               className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Get Started
+            </Link>
+            <Link
+              href="https://www.npmjs.com/package/@getvrex/glabs-sdk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              npm
             </Link>
             <Link
               href="https://github.com/getvrex/glabs-sdk"
@@ -89,17 +103,7 @@ export default function HomePage() {
               <span className="text-foreground">{"    "}</span>
               <span className="text-blue-300">provider</span>
               <span className="text-foreground">{": "}</span>
-              <span className="text-green-400">{"'regotcha'"}</span>
-              <span className="text-foreground">,</span>
-              {"\n"}
-              <span className="text-foreground">{"    "}</span>
-              <span className="text-blue-300">apiKey</span>
-              <span className="text-foreground">{": "}</span>
-              <span className="text-blue-300">process</span>
-              <span className="text-foreground">.</span>
-              <span className="text-blue-300">env</span>
-              <span className="text-foreground">.</span>
-              <span className="text-blue-300">RECAPTCHA_API_KEY</span>
+              <span className="text-green-400">{"'chrome'"}</span>
               <span className="text-foreground">,</span>
               {"\n"}
               <span className="text-foreground">{"  },"}</span>
@@ -149,14 +153,18 @@ export default function HomePage() {
       <section className="border-t bg-muted/30 px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-12 text-center text-3xl font-bold">Features</h2>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <FeatureCard
               title="Image Generation"
-              description="Generate AI images using Google's Imagen models with full control over aspect ratios, seeds, and references."
+              description="Imagen 4 with batch generation, 2K/4K upscaling, and reference images."
             />
             <FeatureCard
               title="Video Generation"
-              description="Create videos with Veo - text-to-video, image-to-video, extend, camera control, and HD upscaling."
+              description="Veo 3 text-to-video, image-to-video, extend, camera reshoot, and HD upscaling."
+            />
+            <FeatureCard
+              title="CLI"
+              description="Full terminal access. Generate images, videos, and run an OpenAI-compatible server."
             />
             <FeatureCard
               title="Type-Safe"

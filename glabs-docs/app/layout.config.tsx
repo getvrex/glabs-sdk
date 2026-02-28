@@ -17,6 +17,11 @@ export const baseOptions: BaseLayoutProps = {
       active: "nested-url",
     },
     {
+      text: "npm",
+      url: "https://www.npmjs.com/package/@getvrex/glabs-sdk",
+      external: true,
+    },
+    {
       text: "GitHub",
       url: "https://github.com/getvrex/glabs-sdk",
       external: true,

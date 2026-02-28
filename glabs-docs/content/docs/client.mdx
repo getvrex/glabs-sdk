@@ -15,9 +15,9 @@ interface GLabsClientConfig {
   bearerToken: string;
 
   // Optional
-  sessionToken?: string;         // Session token for project API
-  accountTier?: 'free' | 'pro' | 'ultra';  // Default: 'pro'
-  projectId?: string;            // Can be provided per-request or auto-resolved
+  sessionToken?: string;         // Session token for auto token refresh (ST→AT)
+  accountTier?: 'pro' | 'ultra'; // Default: 'pro'
+  projectId?: string;            // Auto-resolved if omitted
   recaptcha?: RecaptchaConfig;   // Required for image/video generation
   logger?: GLabsLogger;          // Default: console
   timeout?: number;              // Default: 120000 (2 minutes)
@@ -28,29 +28,19 @@ interface GLabsClientConfig {
 
 ## Account Tiers
 
-The SDK supports three account tiers with different capabilities:
-
-| Feature | Free | Pro | Ultra |
-|---------|------|-----|-------|
-| Video Modes | basic | quality, fast | quality, fast |
-| Default Video Mode | fast | fast | quality |
-| HD Upscaling | No | Yes | Yes |
-| Max Images Per Batch | 4 | 4 | 4 |
+| Feature | Pro | Ultra |
+|---------|-----|-------|
+| Default Video Mode | fast | quality |
+| Video Modes | quality, fast | quality, fast |
+| HD/4K Upscaling | Yes | Yes |
+| Max Images Per Batch | 4 | 4 |
 
 ```typescript
-// Free account
-const freeClient = new GLabsClient({
-  bearerToken: 'token',
-  accountTier: 'free',
-});
-
-// Pro account
 const proClient = new GLabsClient({
   bearerToken: 'token',
   accountTier: 'pro',
 });
 
-// Ultra account
 const ultraClient = new GLabsClient({
   bearerToken: 'token',
   accountTier: 'ultra',
@@ -59,38 +49,82 @@ const ultraClient = new GLabsClient({
 
 ## reCAPTCHA Configuration
 
-Both image and video generation require reCAPTCHA verification. The SDK supports multiple providers:
+All generation requests require reCAPTCHA verification. The SDK supports 7 providers with fallback chains.
 
-### Regotcha (Recommended)
+### Chrome (Recommended)
+
+Real Chrome browser with persistent context — highest scores:
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'token',
   recaptcha: {
-    provider: 'regotcha',
-    apiKey: 'your-regotcha-api-key',
-    maxRetries: 30, // Optional: max polling attempts
+    provider: 'chrome',
   },
 });
 ```
 
-### CapSolver (Recommended)
+### YesCaptcha (Recommended)
+
+Cloud-based — no local browser needed:
 
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'token',
   recaptcha: {
-    provider: 'capsolver',
-    apiKey: 'your-capsolver-api-key',
-    proxy: 'http://user:pass@ip:port', // Optional: residential proxy
-    maxRetries: 30, // Optional: max polling attempts
+    provider: 'yescaptcha',
+    apiKey: 'your-yescaptcha-api-key',
   },
 });
+```
+
+### Fallback Chains
+
+Configure a fallback provider in case the primary fails:
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  recaptcha: {
+    provider: 'chrome',
+    fallback: {
+      provider: 'yescaptcha',
+      apiKey: 'key',
+    },
+  },
+});
+```
+
+### All Providers
+
+| Provider | Type | Note |
+|----------|------|------|
+| `chrome` | Browser | Real Chrome, highest scores |
+| `yescaptcha` | Cloud | Reliable, no browser needed |
+| `playwright` | Browser | Playwright-managed browser |
+| `regotcha` | Cloud | Optimized for Google Labs |
+| `capsolver` | Cloud | Proxy support |
+| `veo3solver` | Token | Pre-solved tokens via JWT |
+| `custom` | Self-hosted | Your own solver endpoint |
+
+## Token Management
+
+With `sessionToken` configured, the SDK automatically:
+- Refreshes bearer token 1 hour before expiry
+- Retries once on 401 after refreshing
+- Deduplicates concurrent refresh calls
+
+```typescript
+const client = new GLabsClient({
+  bearerToken: 'token',
+  sessionToken: 'session-token',
+});
+
+// Manual refresh
+await client.refreshToken();
 ```
 
 ## Custom Logger
-
-You can provide a custom logger that implements the `GLabsLogger` interface:
 
 ```typescript
 interface GLabsLogger {
@@ -98,75 +132,49 @@ interface GLabsLogger {
   warn: (message: string, ...args: unknown[]) => void;
   error: (message: string, ...args: unknown[]) => void;
 }
-```
-
-Example with a custom logger:
-
-```typescript
-const customLogger = {
-  log: (msg, ...args) => console.log(`[GLabs] ${msg}`, ...args),
-  warn: (msg, ...args) => console.warn(`[GLabs] ${msg}`, ...args),
-  error: (msg, ...args) => console.error(`[GLabs] ${msg}`, ...args),
-};
 
 const client = new GLabsClient({
   bearerToken: 'token',
-  logger: customLogger,
+  logger: {
+    log: (msg, ...args) => console.log(`[GLabs] ${msg}`, ...args),
+    warn: (msg, ...args) => console.warn(`[GLabs] ${msg}`, ...args),
+    error: (msg, ...args) => console.error(`[GLabs] ${msg}`, ...args),
+  },
 });
 ```
 
-## Silent Mode
-
-To disable logging:
+### Silent Mode
 
 ```typescript
-const silentLogger = {
-  log: () => {},
-  warn: () => {},
-  error: () => {},
-};
-
 const client = new GLabsClient({
   bearerToken: 'token',
-  logger: silentLogger,
+  logger: { log: () => {}, warn: () => {}, error: () => {} },
 });
 ```
 
 ## Retry Configuration
 
-The SDK automatically retries on network errors:
-
 ```typescript
 const client = new GLabsClient({
   bearerToken: 'token',
-  maxRetries: 3,      // Number of retry attempts
-  retryDelay: 2000,   // Delay between retries in ms
-  timeout: 180000,    // Request timeout in ms
+  maxRetries: 3,
+  retryDelay: 2000,
+  timeout: 180000,
 });
 ```
 
 ## Client Properties
 
-Access client configuration:
-
 ```typescript
-const client = new GLabsClient({
-  bearerToken: 'token',
-  accountTier: 'ultra',
-  projectId: 'my-project',
-});
-
-console.log(client.accountTier);  // 'ultra'
-console.log(client.projectId);    // 'my-project'
+client.accountTier  // 'pro' | 'ultra'
+client.projectId    // string | undefined
 ```
 
 ## Static Methods
 
 ### generateSessionId
 
-Generate a unique session ID for API requests:
-
 ```typescript
 const sessionId = GLabsClient.generateSessionId();
-// Example: '550e8400-e29b-41d4-a716-446655440000'
+// '550e8400-e29b-41d4-a716-446655440000'
 ```
