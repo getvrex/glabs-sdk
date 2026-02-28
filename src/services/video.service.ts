@@ -166,12 +166,22 @@ export class VideoService {
       sceneId,
     } = options;
 
-    const config = getVideoApiConfig(
+    const baseConfig = getVideoApiConfig(
       "text-to-video",
       accountTier,
       aspectRatio,
       videoMode
     );
+
+    // Default T2V portrait ultra to fast-ultra portrait model
+    // unless caller explicitly sets a different videoMode.
+    const config =
+      accountTier === "ultra" && aspectRatio === "9:16" && !videoMode
+        ? {
+            ...baseConfig,
+            videoModelKey: "veo_3_1_t2v_fast_portrait_ultra" as const,
+          }
+        : baseConfig;
 
     const requestSeed = seed ?? generateSeed();
     const generatedSceneId = sceneId?.trim() || generateId();
