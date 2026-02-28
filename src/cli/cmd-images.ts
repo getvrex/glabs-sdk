@@ -18,13 +18,15 @@ Subcommands:
   credits     Check credit status
 
 Generate options:
-  -p, --prompt <text>         Image prompt (required)
-  -a, --aspect-ratio <ratio>  16:9 | 9:16 | 1:1 (default: 1:1)
-  -n, --count <n>             Number of images 1-4 (default: 1)
-  --seed <n>                  Random seed
-  -m, --model <name>          Image model
-  -o, --output-dir <path>     Output directory (default: ./output)
-  --json                      Output raw JSON (no file save)
+  -p, --prompt <text>                  Image prompt (required)
+  -a, --aspect-ratio <ratio>           16:9 | 9:16 | 1:1 (default: 1:1)
+  -n, --count <n>                      Number of images 1-4 (default: 1)
+  --seed <n>                           Random seed
+  -m, --model <name>                   Image model
+  --reference-media-id <id>            Reference media ID (repeatable)
+  --reference-media-generation-id <id> Reference mediaGenerationId (repeatable)
+  -o, --output-dir <path>              Output directory (default: ./output)
+  --json                               Output raw JSON (no file save)
 
 Upload options:
   -f, --file <path>           Image file path (required)
@@ -88,6 +90,8 @@ async function runGenerate(
       count: { type: "string", short: "n" },
       seed: { type: "string" },
       model: { type: "string", short: "m" },
+      "reference-media-id": { type: "string", multiple: true },
+      "reference-media-generation-id": { type: "string", multiple: true },
       "output-dir": { type: "string", short: "o" },
       json: { type: "boolean", default: false },
     },
@@ -95,6 +99,15 @@ async function runGenerate(
   });
 
   if (!values.prompt) fatal("--prompt is required");
+
+  const references = [
+    ...((values["reference-media-id"] as string[] | undefined) ?? []).map(
+      (mediaId) => ({ mediaId })
+    ),
+    ...((values["reference-media-generation-id"] as string[] | undefined) ?? []).map(
+      (mediaGenerationId) => ({ mediaGenerationId })
+    ),
+  ];
 
   const sessionId = GLabsClient.generateSessionId();
   const result = await client.images.generate({
@@ -104,6 +117,7 @@ async function runGenerate(
     count: values.count ? Number(values.count) : undefined,
     seed: values.seed ? Number(values.seed) : undefined,
     model: values.model as ImageModel | undefined,
+    references: references.length > 0 ? references : undefined,
   });
 
   if (values.json) {
