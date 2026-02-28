@@ -245,12 +245,25 @@ export class VideoService {
       );
     }
 
-    const config = getVideoApiConfig(
+    const baseConfig = getVideoApiConfig(
       generationType,
       accountTier,
       normalizedAspectRatio,
       videoMode
     );
+
+    // Default I2V portrait ultra to fast-ultra portrait model
+    // unless caller explicitly sets a different videoMode.
+    const config =
+      generationType === "image-to-video" &&
+      accountTier === "ultra" &&
+      normalizedAspectRatio === "9:16" &&
+      !videoMode
+        ? {
+            ...baseConfig,
+            videoModelKey: "veo_3_1_i2v_s_fast_portrait_ultra" as const,
+          }
+        : baseConfig;
 
     const requestSeed = seed ?? generateSeed();
     const generatedSceneId = sceneId?.trim() || generateId();
