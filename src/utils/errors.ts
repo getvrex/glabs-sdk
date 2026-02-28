@@ -104,9 +104,23 @@ export function parseGoogleApiError(
     );
   }
 
-  // Default error
+  // Permission denied
+  if (
+    errorStatus === "PERMISSION_DENIED" ||
+    statusCode === 403
+  ) {
+    const details = (errorObj?.details as unknown[]) ?? [];
+    const detailStr = details.length > 0 ? `\nDetails: ${JSON.stringify(details)}` : "";
+    return new GLabsError(
+      `Permission denied: ${errorMessage || "The caller does not have permission"}${detailStr}`,
+      ERROR_CODES.PERMISSION_DENIED,
+      statusCode
+    );
+  }
+
+  // Default error — include original message for debugging
   return new GLabsError(
-    "Request failed, please try again later",
+    errorMessage || "Request failed, please try again later",
     ERROR_CODES.UNKNOWN,
     statusCode
   );

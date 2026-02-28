@@ -139,7 +139,7 @@ export class VideoService {
       }
 
       // Other error - throw immediately
-      this.logger.error(`[Video] ${operationName} failed:`, errorData);
+      this.logger.error(`[Video] ${operationName} failed:`, JSON.stringify(errorData, null, 2));
       throw parseGoogleApiError(errorData, response.status);
     }
 
@@ -316,6 +316,9 @@ export class VideoService {
           mediaGenerationContext: { batchId: crypto.randomUUID() },
           requests: [requestObject],
         };
+
+        this.logger.log(`[Video] I2V endpoint: ${endpoint}`);
+        this.logger.log(`[Video] I2V payload: ${JSON.stringify({ ...payload, clientContext: { ...payload.clientContext, recaptchaContext: { token: "REDACTED" } } }, null, 2)}`);
 
         const headers = this.buildHeaders(recaptchaResult);
 
