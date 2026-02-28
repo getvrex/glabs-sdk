@@ -229,27 +229,61 @@ describe("GLabs SDK E2E Tests", () => {
   // =========================================================================
   describe("Video Generation API", () => {
     it.skipIf(!hasCredentials || !config.runVideoTests)(
-      "should generate text-to-video",
+      "should run flow: t2i -> i2i(ref) -> i2v (nanobanana2 + veo3 fast vertical)",
       async () => {
-        const result = await client.videos.generateTextToVideo({
-          prompt: "A gentle camera pan across a mountain landscape",
+        const aspectRatio = "9:16" as const;
+
+        // Step 1: T2I
+        const t2i = await client.images.generate({
+          prompt: "A cinematic portrait scene with soft lighting",
           sessionId,
-          aspectRatio: "16:9",
+          aspectRatio,
           projectId,
+          model: "nanobanana2",
         });
 
-        expect(result).toBeDefined();
-        expect(result.operationName).toBeDefined();
-        expect(result.sceneId).toBeDefined();
-        expect(result.status).toBeDefined();
+        expect(t2i.images.length).toBeGreaterThan(0);
+        const t2iMediaId = t2i.images[0]?.mediaId;
+        expect(t2iMediaId).toBeDefined();
 
-        videoOperationName = result.operationName;
-        videoSceneId = result.sceneId;
-        console.log(`   Operation: ${result.operationName.substring(0, 20)}...`);
-        console.log(`   Status: ${result.status}`);
+        // Step 2: I2I (use previous image as reference)
+        const i2i = await client.images.generate({
+          prompt: "Keep the same composition, add subtle neon accents and richer contrast",
+          sessionId,
+          aspectRatio,
+          projectId,
+          model: "nanobanana2",
+          references: [{ mediaId: t2iMediaId! }],
+        });
+
+        expect(i2i.images.length).toBeGreaterThan(0);
+        const i2iMediaId = i2i.images[0]?.mediaId;
+        expect(i2iMediaId).toBeDefined();
+        imageMediaId = i2iMediaId;
+
+        // Step 3: I2V (use last image as first frame)
+        const i2v = await client.videos.generateImageToVideo({
+          prompt: "Subtle cinematic motion, slow push-in, natural camera movement",
+          startMediaId: i2iMediaId!,
+          sessionId,
+          aspectRatio,
+          projectId,
+          videoMode: "fast",
+        });
+
+        expect(i2v).toBeDefined();
+        expect(i2v.operationName).toBeDefined();
+        expect(i2v.sceneId).toBeDefined();
+
+        videoOperationName = i2v.operationName;
+        videoSceneId = i2v.sceneId;
+
+        console.log(`   T2I media: ${t2iMediaId?.substring(0, 20)}...`);
+        console.log(`   I2I media: ${i2iMediaId?.substring(0, 20)}...`);
+        console.log(`   I2V operation: ${i2v.operationName.substring(0, 20)}...`);
       },
-      180000
-    ); // 3 minute timeout
+      240000
+    );
 
     it.skipIf(!hasCredentials || !config.runVideoTests)(
       "should check video status",
@@ -269,29 +303,6 @@ describe("GLabs SDK E2E Tests", () => {
         console.log(`   Video status: ${status.status}`);
       },
       30000
-    );
-
-    it.skipIf(!hasCredentials || !config.runVideoTests || !imageMediaId)(
-      "should generate image-to-video",
-      async () => {
-        if (!imageMediaId) {
-          console.log("   Skipped: No image media ID available");
-          return;
-        }
-
-        const result = await client.videos.generateImageToVideo({
-          prompt: "Camera slowly zooms in on the scene",
-          startMediaId: imageMediaId,
-          sessionId,
-          aspectRatio: "16:9",
-          projectId,
-        });
-
-        expect(result).toBeDefined();
-        expect(result.operationName).toBeDefined();
-        console.log(`   I2V Operation: ${result.operationName.substring(0, 20)}...`);
-      },
-      180000
     );
   });
 
