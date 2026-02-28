@@ -1,11 +1,11 @@
 ---
 name: glabs-cli
-description: Use when working with the glabs CLI — the command-line interface for @getvrex/glabs-sdk. Covers all commands (auth, config, images, videos, projects, whisk, serve), option flags, configuration, environment variables, and typical workflows for AI media generation via Google Labs APIs (Imagen 4, Veo 3).
+description: Use when working with the glabs CLI — the command-line interface for @getvrex/glabs-sdk. Covers all commands (auth, config, images, videos, projects, whisk, serve), option flags, configuration, environment variables, and typical workflows for AI media generation via Google Labs APIs (Imagen 4, Veo 3.1).
 ---
 
 # glabs CLI Skill
 
-The `glabs` CLI provides terminal-based access to all @getvrex/glabs-sdk features — image generation (Imagen 4), video generation (Veo 3/3.1), project management, Whisk (Imagen 3.5), and an OpenAI-compatible server.
+The `glabs` CLI provides terminal-based access to all @getvrex/glabs-sdk features — image generation (Imagen 4), video generation (Veo 3.1), project management, Whisk (Imagen 3.5), and an OpenAI-compatible server.
 
 ## Installation
 

@@ -18,7 +18,7 @@ export default function HomePage() {
           <p className="mb-8 text-xl text-muted-foreground">
             TypeScript SDK and CLI for Google Labs AI media generation.
             <br />
-            Generate stunning images with Imagen 4 and videos with Veo 3.
+            Generate stunning images with Imagen 4 and videos with Veo 3.1.
           </p>
 
           {/* Install snippet */}
@@ -160,7 +160,7 @@ export default function HomePage() {
             />
             <FeatureCard
               title="Video Generation"
-              description="Veo 3 text-to-video, image-to-video, extend, camera reshoot, and HD upscaling."
+              description="Veo 3.1 text-to-video, image-to-video, extend, camera reshoot, and HD upscaling."
             />
             <FeatureCard
               title="CLI"

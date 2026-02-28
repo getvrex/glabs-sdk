@@ -57,24 +57,24 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
   "veo-3-t2v-landscape": {
     type: "video-t2v",
     aspectRatio: "16:9",
-    description: "Veo 3 Text-to-Video Landscape",
+    description: "Veo 3.1Text-to-Video Landscape",
   },
   "veo-3-t2v-portrait": {
     type: "video-t2v",
     aspectRatio: "9:16",
-    description: "Veo 3 Text-to-Video Portrait",
+    description: "Veo 3.1Text-to-Video Portrait",
   },
 
   // Video I2V models
   "veo-3-i2v-landscape": {
     type: "video-i2v",
     aspectRatio: "16:9",
-    description: "Veo 3 Image-to-Video Landscape",
+    description: "Veo 3.1Image-to-Video Landscape",
   },
   "veo-3-i2v-portrait": {
     type: "video-i2v",
     aspectRatio: "9:16",
-    description: "Veo 3 Image-to-Video Portrait",
+    description: "Veo 3.1Image-to-Video Portrait",
   },
 
 };

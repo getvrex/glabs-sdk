@@ -299,7 +299,7 @@ const status = await client.images.getCreditStatus();
 
 ### client.videos.generateTextToVideo(options)
 
-Generate video from text prompt using Veo 3.
+Generate video from text prompt using Veo 3.1.
 
 ```typescript
 const operation = await client.videos.generateTextToVideo({
@@ -547,8 +547,8 @@ if (status.status === 'MEDIA_GENERATION_STATUS_FAILED') {
 
 | Tier | Video Modes | Default Mode | Features |
 |------|-------------|--------------|----------|
-| `pro` | fast, quality | fast | Veo 3, HD upscale, extend, reshoot |
-| `ultra` | fast, quality | quality | Veo 3, HD upscale, extend, reshoot |
+| `pro` | fast, quality | fast | Veo 3.1, HD upscale, extend, reshoot |
+| `ultra` | fast, quality | quality | Veo 3.1, HD upscale, extend, reshoot |
 
 ---
 

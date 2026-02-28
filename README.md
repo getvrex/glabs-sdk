@@ -1,6 +1,6 @@
 # GLabs SDK
 
-TypeScript SDK and CLI for Google Labs AI media generation — **Imagen 4** image generation and **Veo 3** video generation.
+TypeScript SDK and CLI for Google Labs AI media generation — **Imagen 4** image generation and **Veo 3.1** video generation.
 
 ## Packages
 
@@ -108,7 +108,7 @@ client.images.upsampleImage(opts)  // Upscale to 2K/4K
 client.images.getCreditStatus()    // Check account credits
 ```
 
-### Video Generation (Veo 3 / 3.1)
+### Video Generation (Veo 3.1)
 
 ```typescript
 client.videos.generateTextToVideo(opts)          // Text-to-video
