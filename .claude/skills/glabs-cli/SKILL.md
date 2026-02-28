@@ -7,6 +7,30 @@ description: Use when working with the glabs CLI — the command-line interface 
 
 The `glabs` CLI provides terminal-based access to all @getvrex/glabs-sdk features — image generation (Imagen 4), video generation (Veo 3/3.1), project management, Whisk (Imagen 3.5), and an OpenAI-compatible server.
 
+## Installation
+
+### Install the CLI
+
+```bash
+npm install -g @getvrex/glabs-cli
+```
+
+This installs the `glabs` command globally. The CLI package is a thin wrapper around `@getvrex/glabs-sdk`.
+
+### Install as SDK (library usage)
+
+```bash
+npm install @getvrex/glabs-sdk
+```
+
+### Install this skill (for Claude Code)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/getvrex/glabs-sdk/main/scripts/install-skill.sh | bash
+```
+
+Or manually copy `.claude/skills/glabs-cli/` into your project's `.claude/skills/` directory.
+
 ## Quick Reference
 
 ```
@@ -23,7 +47,7 @@ Commands:
 
 Global:
   --help, -h      Show help
-  --version, -v   Show version (current: 1.4.0)
+  --version, -v   Show version
 ```
 
 ## Architecture
