@@ -50,12 +50,17 @@ export class OpenAIServer {
   private readonly config: Required<OpenAIServerConfig>;
   private server?: Server;
 
+  // Simple in-memory generation queue (Flow handles up to ~4 parallel tasks well)
+  private activeGenerations = 0;
+  private readonly generationQueue: Array<() => void> = [];
+
   constructor(client: GLabsClient, config: OpenAIServerConfig = {}) {
     this.service = new OpenAICompatService(client);
     this.config = {
       apiKey: config.apiKey ?? "",
       host: config.host ?? "0.0.0.0",
       port: config.port ?? 8000,
+      maxConcurrentGenerations: config.maxConcurrentGenerations ?? 4,
     };
   }
 
@@ -78,6 +83,9 @@ export class OpenAIServer {
         console.log(`[OpenAI Server] Endpoints:`);
         console.log(`  POST /v1/chat/completions`);
         console.log(`  GET  /v1/models`);
+        console.log(
+          `[OpenAI Server] Max concurrent generations: ${this.config.maxConcurrentGenerations}`
+        );
         resolve();
       });
     });
@@ -178,7 +186,9 @@ export class OpenAIServer {
     res: ServerResponse
   ): Promise<void> {
     try {
-      const content = await this.service.generate(request);
+      const content = await this.runWithGenerationSlot(() =>
+        this.service.generate(request)
+      );
       const completionId = generateCompletionId();
       const created = Math.floor(Date.now() / 1000);
 
@@ -242,7 +252,9 @@ export class OpenAIServer {
     this.writeSSE(res, roleChunk);
 
     try {
-      const content = await this.service.generate(request);
+      const content = await this.runWithGenerationSlot(() =>
+        this.service.generate(request)
+      );
 
       // Send content chunk
       const contentChunk: OpenAIChatCompletionChunk = {
@@ -319,6 +331,40 @@ export class OpenAIServer {
   private handleModels(res: ServerResponse): void {
     const models = this.service.getModels();
     this.sendJson(res, 200, { object: "list", data: models });
+  }
+
+  /** Run a generation task with queue + concurrency limit */
+  private async runWithGenerationSlot<T>(task: () => Promise<T>): Promise<T> {
+    await this.acquireGenerationSlot();
+    try {
+      return await task();
+    } finally {
+      this.releaseGenerationSlot();
+    }
+  }
+
+  /** Acquire a generation slot (or wait in queue) */
+  private async acquireGenerationSlot(): Promise<void> {
+    if (this.activeGenerations < this.config.maxConcurrentGenerations) {
+      this.activeGenerations += 1;
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      this.generationQueue.push(() => {
+        this.activeGenerations += 1;
+        resolve();
+      });
+    });
+  }
+
+  /** Release a generation slot and schedule next queued request */
+  private releaseGenerationSlot(): void {
+    this.activeGenerations = Math.max(0, this.activeGenerations - 1);
+    const next = this.generationQueue.shift();
+    if (next) {
+      next();
+    }
   }
 
   /** Read the full request body as a string */

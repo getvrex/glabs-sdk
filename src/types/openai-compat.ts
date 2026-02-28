@@ -81,6 +81,8 @@ export type OpenAIServerConfig = {
   host?: string;
   /** Port to listen on (default: 8000) */
   port?: number;
+  /** Max number of generation tasks running in parallel (default: 4) */
+  maxConcurrentGenerations?: number;
 };
 
 /** Generation type detected from model name */

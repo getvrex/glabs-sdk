@@ -12,9 +12,10 @@ const HELP = `Usage: glabs serve [options]
 Start an OpenAI-compatible HTTP server wrapping the GLabs SDK.
 
 Options:
-  --port <n>        Port to listen on (default: 8000)
-  --host <addr>     Host to bind to (default: 0.0.0.0)
-  --api-key <key>   Optional API key for auth
+  --port <n>              Port to listen on (default: 8000)
+  --host <addr>           Host to bind to (default: 0.0.0.0)
+  --api-key <key>         Optional API key for auth
+  --max-concurrent <n>    Max concurrent generation tasks (default: 4)
 `;
 
 export async function run(args: string[]) {
@@ -29,6 +30,7 @@ export async function run(args: string[]) {
       port: { type: "string" },
       host: { type: "string" },
       "api-key": { type: "string" },
+      "max-concurrent": { type: "string" },
     },
     strict: true,
   });
@@ -43,6 +45,9 @@ export async function run(args: string[]) {
       port: values.port ? Number(values.port) : 8000,
       host: values.host ?? "0.0.0.0",
       apiKey: values["api-key"],
+      maxConcurrentGenerations: values["max-concurrent"]
+        ? Number(values["max-concurrent"])
+        : 4,
     });
 
     await server.start();
