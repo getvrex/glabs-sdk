@@ -1,0 +1,35 @@
+{
+  "name": "@getvrex/glabs-cli",
+  "version": "2.1.1",
+  "description": "CLI for Google Labs AI media generation (Imagen 4, Veo 3)",
+  "type": "module",
+  "bin": {
+    "glabs": "./bin/glabs.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "dependencies": {
+    "@getvrex/glabs-sdk": "^2.1.1"
+  },
+  "keywords": [
+    "google-labs",
+    "ai",
+    "cli",
+    "image-generation",
+    "video-generation",
+    "veo",
+    "imagen"
+  ],
+  "license": "MIT",
+  "author": "Vrex <support@getvrex.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getvrex/glabs-sdk",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
+}

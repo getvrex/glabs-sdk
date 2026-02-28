@@ -3,9 +3,6 @@
   "version": "2.1.1",
   "description": "TypeScript SDK for Google Labs AI media generation APIs",
   "type": "module",
-  "bin": {
-    "glabs": "./dist/cli/cli-entry.js"
-  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,6 +18,9 @@
     "./openai": {
       "import": "./dist/openai-server.js",
       "types": "./dist/openai-server.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli/cli-entry.js"
     }
   },
   "files": [

@@ -54,7 +54,16 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Publish to npm
+      - name: Publish SDK to npm
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Sync CLI package version with SDK and publish
+      - name: Publish CLI to npm
+        run: |
+          cd packages/cli
+          npm version --no-git-tag-version $(node -p "require('../../package.json').version")
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
