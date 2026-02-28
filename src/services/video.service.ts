@@ -173,13 +173,15 @@ export class VideoService {
       videoMode
     );
 
-    // Default T2V portrait ultra to fast-ultra portrait model
-    // unless caller explicitly sets a different videoMode.
+    // Default T2V ultra to fast-ultra model unless caller explicitly sets videoMode.
     const config =
-      accountTier === "ultra" && aspectRatio === "9:16" && !videoMode
+      accountTier === "ultra" && !videoMode
         ? {
             ...baseConfig,
-            videoModelKey: "veo_3_1_t2v_fast_portrait_ultra" as const,
+            videoModelKey:
+              aspectRatio === "9:16"
+                ? ("veo_3_1_t2v_fast_portrait_ultra" as const)
+                : ("veo_3_1_t2v_fast_ultra" as const),
           }
         : baseConfig;
 
@@ -262,16 +264,15 @@ export class VideoService {
       videoMode
     );
 
-    // Default I2V portrait ultra to fast-ultra portrait model
-    // unless caller explicitly sets a different videoMode.
+    // Default I2V ultra to fast-ultra model unless caller explicitly sets videoMode.
     const config =
-      generationType === "image-to-video" &&
-      accountTier === "ultra" &&
-      normalizedAspectRatio === "9:16" &&
-      !videoMode
+      generationType === "image-to-video" && accountTier === "ultra" && !videoMode
         ? {
             ...baseConfig,
-            videoModelKey: "veo_3_1_i2v_s_fast_portrait_ultra" as const,
+            videoModelKey:
+              normalizedAspectRatio === "9:16"
+                ? ("veo_3_1_i2v_s_fast_portrait_ultra" as const)
+                : ("veo_3_1_i2v_s_fast_ultra" as const),
           }
         : baseConfig;
 
