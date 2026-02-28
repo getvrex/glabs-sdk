@@ -27,6 +27,14 @@ export async function createClient(cfg: CliConfig) {
             apiKey: cfg.recaptchaApiKey,
           }
         : undefined,
+    tokenExtractor:
+      cfg.googleEmail && cfg.googlePassword
+        ? {
+            googleEmail: cfg.googleEmail,
+            googlePassword: cfg.googlePassword,
+            browserlessToken: cfg.browserlessToken,
+          }
+        : undefined,
     logger: console,
   });
 }

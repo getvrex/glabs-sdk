@@ -10,6 +10,8 @@ export type {
   GLabsLogger,
   ResolvedConfig,
   SessionInfo,
+  TokenExtractorConfig,
+  TokenExtractionResult,
 } from "./client";
 // Common types
 export type {

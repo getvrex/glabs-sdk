@@ -17,6 +17,9 @@ export type CliConfig = {
   recaptchaApiKey?: string;
   whiskCookie?: string;
   outputDir?: string;
+  googleEmail?: string;
+  googlePassword?: string;
+  browserlessToken?: string;
 };
 
 const CONFIG_DIR = join(homedir(), ".glabs");
@@ -31,6 +34,9 @@ const ENV_MAP: Record<string, keyof CliConfig> = {
   GLABS_RECAPTCHA_API_KEY: "recaptchaApiKey",
   GLABS_WHISK_COOKIE: "whiskCookie",
   GLABS_OUTPUT_DIR: "outputDir",
+  GLABS_GOOGLE_EMAIL: "googleEmail",
+  GLABS_GOOGLE_PASSWORD: "googlePassword",
+  GLABS_BROWSERLESS_TOKEN: "browserlessToken",
 };
 
 /** Read config file from disk, returns empty object if missing */

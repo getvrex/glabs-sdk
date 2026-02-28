@@ -52,6 +52,7 @@ import type {
   GLabsClientConfig,
   GLabsLogger,
   ResolvedConfig,
+  TokenExtractionResult,
 } from "./types/client";
 import { GLabsError } from "./utils";
 import type { AccountTier, AspectRatio } from "./types/common";
@@ -135,6 +136,7 @@ export class GLabsClient {
       accountTier: config.accountTier ?? "pro",
       projectId: config.projectId,
       recaptcha: config.recaptcha,
+      tokenExtractor: config.tokenExtractor,
       logger: config.logger ?? defaultLogger,
       timeout: config.timeout ?? DEFAULTS.TIMEOUT,
       maxRetries: config.maxRetries ?? DEFAULTS.MAX_RETRIES,
@@ -160,7 +162,7 @@ export class GLabsClient {
     } catch (error) {
       // On 401, try refreshing once and retry
       if (
-        this.config.sessionToken &&
+        (this.config.sessionToken || this.config.tokenExtractor) &&
         error instanceof GLabsError &&
         error.statusCode === 401
       ) {
@@ -180,6 +182,14 @@ export class GLabsClient {
    */
   async refreshToken(): Promise<void> {
     await this.tokenManager.forceRefresh();
+  }
+
+  /**
+   * Extract fresh tokens via Browserless.
+   * Requires tokenExtractor config (googleEmail, googlePassword, browserlessToken).
+   */
+  async extractTokens(): Promise<TokenExtractionResult> {
+    return this.tokenManager.extractTokens();
   }
 
   /**

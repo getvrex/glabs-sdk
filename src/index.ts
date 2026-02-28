@@ -50,6 +50,7 @@ export {
   OpenAICompatService,
   PlaywrightRecaptchaService,
   RecaptchaService,
+  TokenExtractorService,
   VideoService,
 } from "./services";
 // OpenAI-compatible server
@@ -77,6 +78,8 @@ PollOperationOptions,
   // Client types
   GLabsClientConfig,
   GLabsLogger,
+  TokenExtractorConfig,
+  TokenExtractionResult,
   ImageApiConfig,
   ImageAspectRatioEnum,
   ImageModel,

@@ -5,6 +5,26 @@
 import type { AccountTier } from "./common";
 import type { RecaptchaConfig } from "./recaptcha";
 
+/** Configuration for automated token extraction */
+export type TokenExtractorConfig = {
+  googleEmail: string;
+  googlePassword: string;
+  /** Browserless.io token — if omitted, launches local Chromium */
+  browserlessToken?: string;
+};
+
+/** Result of a token extraction attempt */
+export type TokenExtractionResult = {
+  success: boolean;
+  bearerToken?: string;
+  sessionToken?: string;
+  sessionExpiresAt?: Date;
+  credits?: number;
+  tier?: string;
+  expiresAt?: Date;
+  error?: string;
+};
+
 /** Configuration for the GLabs client */
 export type GLabsClientConfig = {
   /** Bearer token for authentication (Google AI APIs) */
@@ -17,6 +37,8 @@ export type GLabsClientConfig = {
   projectId?: string;
   /** reCAPTCHA configuration */
   recaptcha?: RecaptchaConfig;
+  /** Token extractor config for automated Browserless token refresh */
+  tokenExtractor?: TokenExtractorConfig;
   /** Custom logger (defaults to console) */
   logger?: GLabsLogger;
   /** Request timeout in milliseconds (default: 120000) */
@@ -41,6 +63,7 @@ export type ResolvedConfig = {
   accountTier: AccountTier;
   projectId?: string;
   recaptcha?: RecaptchaConfig;
+  tokenExtractor?: TokenExtractorConfig;
   logger: GLabsLogger;
   timeout: number;
   maxRetries: number;

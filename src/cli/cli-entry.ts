@@ -5,6 +5,27 @@
  * Usage: glabs <command> [subcommand] [options]
  */
 
+// Load .env file (CWD) before any command runs
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+try {
+  const envFile = readFileSync(resolve(process.cwd(), ".env"), "utf-8");
+  for (const line of envFile.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx < 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim();
+    // Don't override existing env vars
+    if (process.env[key] === undefined) {
+      process.env[key] = val;
+    }
+  }
+} catch {
+  // No .env file — that's fine
+}
+
 const VERSION = "1.4.0";
 
 const HELP = `glabs — Google Labs AI CLI
@@ -12,6 +33,7 @@ const HELP = `glabs — Google Labs AI CLI
 Usage: glabs <command> [subcommand] [options]
 
 Commands:
+  auth      extract             Extract tokens via Browserless
   config    show | set          Manage CLI configuration
   projects  list | get          Manage projects
   images    generate | upload | upsample | credits
@@ -41,6 +63,11 @@ async function main() {
   const subArgs = args.slice(1);
 
   switch (command) {
+    case "auth": {
+      const mod = await import("./cmd-auth.js");
+      await mod.run(subArgs);
+      break;
+    }
     case "config": {
       const mod = await import("./cmd-config.js");
       await mod.run(subArgs);
