@@ -13,7 +13,12 @@ import {
   progressLine,
   clearProgress,
 } from "./cli-output.js";
-import type { AspectRatio, ReshootMotionType } from "../types/common.js";
+import type {
+  AccountTier,
+  AspectRatio,
+  ReshootMotionType,
+  VideoMode,
+} from "../types/common.js";
 import type { VideoStatusResult } from "../types/video.js";
 
 const HELP = `Usage: glabs videos <subcommand> [options]
@@ -31,6 +36,7 @@ Common options:
   -p, --prompt <text>          Prompt text
   -a, --aspect-ratio <ratio>   16:9 | 9:16 | 1:1 (default: 16:9)
   --seed <n>                   Random seed
+  --account-tier <pro|ultra>   Override account tier for this request
   --json                       Output raw JSON
 
 Generate options:
@@ -39,9 +45,11 @@ Generate options:
 I2V options:
   --start-media-id <id>        Start frame media ID (required)
   --end-media-id <id>          End frame media ID
+  --mode <quality|fast>        Video mode (default: quality)
 
 Extend options:
   --media-id <id>              Video media ID (required)
+  --mode <quality|fast>        Video mode (default: quality)
 
 Reshoot options:
   --media-id <id>              Video media ID (required)
@@ -122,6 +130,7 @@ async function runGenerate(args: string[], client: any, sessionId: string) {
       prompt: { type: "string", short: "p" },
       "aspect-ratio": { type: "string", short: "a" },
       mode: { type: "string" },
+      "account-tier": { type: "string" },
       seed: { type: "string" },
       json: { type: "boolean", default: false },
     },
@@ -134,7 +143,8 @@ async function runGenerate(args: string[], client: any, sessionId: string) {
     prompt: values.prompt,
     sessionId,
     aspectRatio: (values["aspect-ratio"] as AspectRatio) ?? "16:9",
-    videoMode: values.mode as "quality" | "fast" | undefined,
+    videoMode: values.mode as VideoMode | undefined,
+    accountTier: values["account-tier"] as AccountTier | undefined,
     seed: values.seed ? Number(values.seed) : undefined,
   });
 
@@ -150,6 +160,8 @@ async function runI2V(args: string[], client: any, sessionId: string) {
       "start-media-id": { type: "string" },
       "end-media-id": { type: "string" },
       "aspect-ratio": { type: "string", short: "a" },
+      mode: { type: "string" },
+      "account-tier": { type: "string" },
       seed: { type: "string" },
       json: { type: "boolean", default: false },
     },
@@ -165,6 +177,8 @@ async function runI2V(args: string[], client: any, sessionId: string) {
     endMediaId: values["end-media-id"],
     sessionId,
     aspectRatio: (values["aspect-ratio"] as AspectRatio) ?? "16:9",
+    videoMode: values.mode as VideoMode | undefined,
+    accountTier: values["account-tier"] as AccountTier | undefined,
     seed: values.seed ? Number(values.seed) : undefined,
   });
 
@@ -179,6 +193,8 @@ async function runExtend(args: string[], client: any, sessionId: string) {
       "media-id": { type: "string" },
       prompt: { type: "string", short: "p" },
       "aspect-ratio": { type: "string", short: "a" },
+      mode: { type: "string" },
+      "account-tier": { type: "string" },
       seed: { type: "string" },
       json: { type: "boolean", default: false },
     },
@@ -193,6 +209,8 @@ async function runExtend(args: string[], client: any, sessionId: string) {
     prompt: values.prompt,
     sessionId,
     aspectRatio: (values["aspect-ratio"] as AspectRatio) ?? "16:9",
+    videoMode: values.mode as VideoMode | undefined,
+    accountTier: values["account-tier"] as AccountTier | undefined,
     seed: values.seed ? Number(values.seed) : undefined,
   });
 
