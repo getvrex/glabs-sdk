@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/getvrex/glabs-sdk/compare/v2.2.0...v2.2.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* improve error handling for PERMISSION_DENIED and add I2V debug logging ([2bc4ebd](https://github.com/getvrex/glabs-sdk/commit/2bc4ebdd89f52b42481fea1cbf52535607bdb48f))
+
 ## [2.2.0](https://github.com/getvrex/glabs-sdk/compare/v2.1.1...v2.2.0) (2026-02-28)
 
 
