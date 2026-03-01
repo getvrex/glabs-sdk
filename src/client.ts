@@ -398,18 +398,25 @@ export class GLabsClient {
 
     /**
      * Upscale a video to HD (1080p)
+     * If no projectId provided, auto-selects first available project
      */
-    upsample: (
-      options: Omit<UpsampleVideoOptions, "aspectRatio"> & {
+    upsample: async (
+      options: Omit<UpsampleVideoOptions, "projectId" | "accountTier" | "aspectRatio"> & {
+        projectId?: string;
+        accountTier?: AccountTier;
         aspectRatio?: AspectRatio;
       }
-    ): Promise<VideoOperationResult> =>
-      this.withTokenRefresh(() =>
+    ): Promise<VideoOperationResult> => {
+      const projectId = await this.resolveProjectId(options.projectId);
+      return this.withTokenRefresh(() =>
         this.videoService.upsampleVideo({
           ...options,
+          projectId,
+          accountTier: options.accountTier ?? this.config.accountTier,
           aspectRatio: options.aspectRatio ?? "16:9",
         })
-      ),
+      );
+    },
 
     /**
      * Generate video from reference images (1-3 images)
