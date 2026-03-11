@@ -85,7 +85,7 @@ glabs images generate -p "Style transfer" --reference-media-id abc --reference-m
 | `-p, --prompt <text>` | Image prompt (required) |
 | `-a, --aspect-ratio <ratio>` | `16:9` \| `9:16` \| `1:1` (default: `1:1`) |
 | `-n, --count <n>` | Number of images 1-4 (default: 1) |
-| `-m, --model <name>` | `nanobanana` \| `nanobananapro` \| `nanobanana2` |
+| `-m, --model <name>` | `nanobananapro` \| `nanobanana2` \| `imagen-4` \| `imagen-4-fast` \| `imagen-4-ultra` |
 | `--seed <n>` | Random seed |
 | `--reference-media-id <id>` | Reference media ID (repeatable) |
 | `--reference-media-generation-id <id>` | Reference mediaGenerationId (repeatable) |

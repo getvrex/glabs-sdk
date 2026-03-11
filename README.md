@@ -99,7 +99,9 @@ console.log('Video URL:', video.videoUrl);
 await client.close();
 ```
 
-### Image Generation (Imagen 4)
+### Image Generation
+
+Models: `nanobanana2` (default, NARWHAL), `nanobananapro` (GEM_PIX_2), `imagen-4` / `imagen-4-fast` / `imagen-4-ultra` (IMAGEN_3_5)
 
 ```typescript
 client.images.generate(opts)       // Text-to-image (up to 4 per batch)
