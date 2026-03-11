@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.2](https://github.com/getvrex/glabs-sdk/compare/v2.2.1...v2.2.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* update image model defaults — drop deprecated GEM_PIX, add IMAGEN_3_5 ([13927c6](https://github.com/getvrex/glabs-sdk/commit/13927c65cb25986b7a2963aae550b39606eb6122))
+
 ## [2.2.1](https://github.com/getvrex/glabs-sdk/compare/v2.2.0...v2.2.1) (2026-03-01)
 
 
