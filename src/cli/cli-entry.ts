@@ -7,7 +7,8 @@
 
 // Load .env file (CWD) before any command runs
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 try {
   const envFile = readFileSync(resolve(process.cwd(), ".env"), "utf-8");
   for (const line of envFile.split("\n")) {
@@ -26,7 +27,16 @@ try {
   // No .env file — that's fine
 }
 
-const VERSION = "1.4.0";
+// Read version from package.json (walks up from current file to find it)
+const VERSION = (() => {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 5; i++) {
+    try {
+      return JSON.parse(readFileSync(resolve(dir, "package.json"), "utf-8")).version as string;
+    } catch { dir = resolve(dir, ".."); }
+  }
+  return "unknown";
+})();
 
 const HELP = `glabs — Google Labs AI CLI
 
