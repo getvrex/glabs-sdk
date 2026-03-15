@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.3](https://github.com/getvrex/glabs-sdk/compare/v2.2.2...v2.2.3) (2026-03-15)
+
+
+### Bug Fixes
+
+* default ultra tier video mode to fast ([7759888](https://github.com/getvrex/glabs-sdk/commit/7759888c1f8585e9ccd3b4c70d99164ced3d6be4))
+
 ## [2.2.2](https://github.com/getvrex/glabs-sdk/compare/v2.2.1...v2.2.2) (2026-03-11)
 
 
