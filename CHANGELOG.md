@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.4](https://github.com/getvrex/glabs-sdk/compare/v2.2.3...v2.2.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* read CLI version dynamically from package.json ([9a9d320](https://github.com/getvrex/glabs-sdk/commit/9a9d320fe0d23b20f1f7ac9b1411482f6a1e9d31))
+
 ## [2.2.3](https://github.com/getvrex/glabs-sdk/compare/v2.2.2...v2.2.3) (2026-03-15)
 
 
