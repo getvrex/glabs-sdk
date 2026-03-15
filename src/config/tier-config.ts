@@ -56,7 +56,7 @@ const TIER_CAPABILITIES: TierCapabilitiesRecord = {
   },
   ultra: {
     supportedVideoModes: ["quality", "fast"],
-    defaultVideoMode: "quality",
+    defaultVideoMode: "fast",
     paygateTier: "PAYGATE_TIER_TWO",
     supportsUpsample: true,
     supportsQualityMode: true,
