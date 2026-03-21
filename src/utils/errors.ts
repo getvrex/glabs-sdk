@@ -126,7 +126,7 @@ export function parseGoogleApiError(
   );
 }
 
-/** Parse video operation error and return user-friendly message */
+/** Parse video operation error and return user-friendly message with raw details */
 export function parseVideoOperationError(operation: unknown): string {
   const op = operation as Record<string, unknown> | undefined;
   const innerOp = op?.operation as Record<string, unknown> | undefined;
@@ -134,18 +134,26 @@ export function parseVideoOperationError(operation: unknown): string {
 
   const errorMessage = (error?.message as string) || "";
   const errorCode = error?.code as number | undefined;
+  const errorStatus = error?.status as string | undefined;
+
+  // Build raw detail suffix for debugging
+  const rawParts: string[] = [];
+  if (errorCode !== undefined) rawParts.push(`code=${errorCode}`);
+  if (errorStatus) rawParts.push(`status=${errorStatus}`);
+  if (errorMessage) rawParts.push(`msg=${errorMessage}`);
+  const rawDetail = rawParts.length > 0 ? ` [${rawParts.join(", ")}]` : "";
 
   // High traffic error
   if (
     errorMessage.includes("HIGH_TRAFFIC") ||
     errorMessage.includes("PUBLIC_ERROR_HIGH_TRAFFIC")
   ) {
-    return "Service busy, please try again later";
+    return `Service busy, please try again later${rawDetail}`;
   }
 
   // Code 13 is usually an internal error
   if (errorCode === 13) {
-    return "Service busy, please try again later";
+    return `Service busy (internal error)${rawDetail}`;
   }
 
   // Invalid argument
@@ -153,10 +161,11 @@ export function parseVideoOperationError(operation: unknown): string {
     errorMessage.toLowerCase().includes("invalid") ||
     errorMessage.toLowerCase().includes("argument")
   ) {
-    return "Prompt or image content violates policy, please modify and retry";
+    return `Prompt or image content violates policy, please modify and retry${rawDetail}`;
   }
 
-  return "Video generation failed, please try again later";
+  // Include raw details so callers can diagnose unknown failures
+  return `Video generation failed${rawDetail || ", no error details returned"}`;
 }
 
 /** Check if response requires reCAPTCHA */
