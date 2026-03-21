@@ -1,0 +1,205 @@
+GLABS SDK TOKEN MANAGEMENT SCOUT SUMMARY
+================================================================================
+
+PROJECT: @getvrex/glabs-sdk v2.1.1 (Google Labs AI SDK)
+DATE: 2026-02-28
+
+================================================================================
+DIRECTORY TREE (src/)
+================================================================================
+
+src/
+├── client.ts                          # Main client, wraps all APIs with token refresh
+├── openai-server.ts
+├── index.ts
+│
+├── cli/                               # 10 files, command-line interface
+│   ├── cli-entry.ts, cli-client.ts, cli-config.ts
+│   ├── cmd-images.ts, cmd-videos.ts, cmd-projects.ts
+│   └── ...
+│
+├── services/                          # Core business logic (9 files)
+│   ├── token-manager.ts              # ⭐⭐⭐ ST→AT token refresh
+│   ├── image.service.ts               # Uses bearer token
+│   ├── video.service.ts               # Uses bearer token
+│   ├── project.service.ts             # Uses bearer token
+│   ├── recaptcha.service.ts           # reCAPTCHA orchestration
+│   └── ...
+│
+├── types/                             # TypeScript definitions (9 files)
+│   ├── client.ts                      # GLabsClientConfig, ResolvedConfig
+│   ├── common.ts, image.ts, video.ts, project.ts
+│   └── ...
+│
+├── config/                            # Configuration utilities (2 files)
+│   └── tier-config.ts
+│
+├── utils/                             # Helper functions (3 files)
+│   ├── fetch.ts                       # HTTP + auth headers, retry logic
+│   ├── errors.ts                      # Error parsing & auth error codes
+│   └── index.ts
+│
+└── constants.ts                       # API endpoints, defaults, error codes
+
+TOTAL: ~38 files in src/
+
+================================================================================
+TOKEN MANAGEMENT ARCHITECTURE
+================================================================================
+
+INPUT TOKENS (from config):
+  ├─ bearerToken           [REQUIRED] Google Labs API access token (3h+ expiry)
+  └─ sessionToken          [OPTIONAL] __Secure-next-auth.session-token (ST→AT refresh)
+
+KEY MECHANISM: ST→AT (Session Token → Access Token)
+  └─ Endpoint: https://labs.google/fx/api/auth/session
+  └─ Method: GET with Cookie header
+
+REFRESH STRATEGY:
+  ├─ Proactive: Refresh when < 1 hour remaining
+  ├─ Reactive: Refresh on 401 + retry
+  └─ Deduplication: Prevents concurrent refresh requests
+
+API FLOW:
+  Client.generateImage() 
+    → withTokenRefresh()
+      → ensureValid() [checks if refresh needed]
+        → doRefresh() [calls ST→AT endpoint if needed]
+      → execute API call
+      → on 401: forceRefresh() + retry once
+
+================================================================================
+AUTHENTICATION HEADERS
+================================================================================
+
+DEFAULT HEADERS (all requests):
+  Content-Type: application/json
+  Origin: https://labs.google
+  Referer: https://labs.google/
+  Authorization: Bearer <bearerToken>
+
+FOR SESSION REFRESH (ST→AT):
+  Cookie: __Secure-next-auth.session-token=<sessionToken>
+
+================================================================================
+KEY FILES FOR TOKEN MANAGEMENT
+================================================================================
+
+PRIMARY:
+  √ /src/services/token-manager.ts          (150 lines)
+    - ensureValid()         auto-refresh if needed
+    - forceRefresh()        force immediate refresh
+    - needsRefresh()        check if refresh needed
+    - doRefresh()           perform ST→AT call
+
+  √ /src/client.ts                          (446 lines)
+    - constructor()         setup TokenManager + services
+    - refreshToken()        public manual refresh API
+    - withTokenRefresh()    wraps all API calls
+
+  √ /src/utils/fetch.ts                     (117 lines)
+    - buildHeaders()        adds Authorization header
+    - fetchWithRetry()      HTTP with retry logic
+
+  √ /src/utils/errors.ts                    (186 lines)
+    - GLabsError class      custom error with code/statusCode
+    - Auth-specific errors  (no sessionToken, expired session, etc.)
+
+  √ /src/types/client.ts                    (55 lines)
+    - GLabsClientConfig     input configuration type
+    - ResolvedConfig        internal config (bearerToken is mutable)
+
+SUPPORTING:
+  √ /src/constants.ts                       (86 lines)
+    - ENDPOINTS             all API routes
+    - SESSION_ENDPOINT      ST→AT endpoint
+    - DEFAULT_HEADERS       headers for all requests
+    - ERROR_CODES          auth error classifications
+
+  √ /src/services/index.ts                  (27 lines)
+    - exports TokenManager
+
+  √ /package.json                           (75 lines)
+    - No external auth libs (custom implementation)
+    - Runtime: chrome-remote-interface
+    - Dev: playwright, typescript, tsup
+
+CONFIGURATION:
+  √ .env.example                            minimal env vars
+  √ .env                                    live test tokens
+  √ README.md                               includes token management docs
+
+================================================================================
+ENV VARIABLES
+================================================================================
+
+REQUIRED:
+  GLABS_BEARER_TOKEN          Google Labs API token (ya29.a...)
+  
+OPTIONAL (for auto-refresh):
+  GLABS_SESSION_TOKEN         Session token for ST→AT (eyJhbGc...)
+
+OPTIONAL (general):
+  GLABS_PROJECT_ID            Default project UUID
+  RECAPTCHA_API_KEY           reCAPTCHA solver key
+  RECAPTCHA_PROVIDER          Provider: yescaptcha, chrome, playwright, etc.
+
+================================================================================
+ERROR CODES (AUTH-RELATED)
+================================================================================
+
+401 Unauthorized
+  → Triggers: forceRefresh() + retry once (if sessionToken configured)
+
+403 Forbidden
+  → With "RECAPTCHA": needs reCAPTCHA token
+  → With "PERMISSION_DENIED": auth issue
+
+"Cannot refresh token: no sessionToken configured"
+  → Session token required for auto-refresh
+
+"Session refresh failed: {status} {statusText}"
+  → Network error on ST→AT endpoint
+
+"Session cookie expired or invalid"
+  → Response contains error field (e.g., "ACCESS_TOKEN_REFRESH_NEEDED")
+
+================================================================================
+TOKEN EXTRACTION FEATURE: RECOMMENDED INTEGRATION
+================================================================================
+
+Add to TokenManager:
+  async extractAccessToken(): Promise<{
+    accessToken: string;
+    expiresAt?: Date;
+    user?: { email: string; name: string };
+  }>
+
+Expose via Client:
+  async extractToken(): Promise<{
+    accessToken: string;
+    expiresAt?: Date;
+    user?: { email: string; name: string };
+  }>
+
+Benefits:
+  ✓ Reuses existing ST→AT logic
+  ✓ Returns token + metadata
+  ✓ Doesn't update client state
+  ✓ Handles errors consistently
+
+================================================================================
+SUMMARY
+================================================================================
+
+✅ Complete token refresh mechanism (ST→AT conversion)
+✅ Proactive + reactive refresh strategies
+✅ Concurrent request deduplication
+✅ 401 auto-retry after refresh
+✅ In-memory token management
+✅ Error classification for auth failures
+✅ No external auth dependencies (custom implementation)
+
+Ready for token extraction feature integration!
+
+================================================================================
