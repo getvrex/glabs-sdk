@@ -2,7 +2,7 @@
  * Image generation types
  */
 
-import type { AspectRatio, ImageModel } from "./common";
+import type { AspectRatio, ImageModel, ImageQuality, ImageSize } from "./common";
 
 /** Reference image for generation */
 export type ImageReference = {
@@ -56,6 +56,10 @@ export type GenerateImageOptions = {
   model?: ImageModel;
   /** Multiple different prompts (overrides count) */
   prompts?: string[];
+  /** Output image size — triggers auto-upsample after generation ("2k" or "4k") */
+  imageSize?: ImageSize;
+  /** Image quality (OpenAI-compatible) — "medium" maps to 2k, "high"/"hd"/"ultra" maps to 4k */
+  quality?: ImageQuality;
 };
 
 /** A single generated image */
@@ -76,6 +80,10 @@ export type GeneratedImage = {
   mimeType?: string;
   /** URL to the image on Google's CDN */
   fifeUrl?: string;
+  /** Whether this image was upsampled */
+  upsampled?: boolean;
+  /** Upsample resolution applied (e.g. "2k", "4k") */
+  upsampledResolution?: string;
 };
 
 /** Result from generating images */

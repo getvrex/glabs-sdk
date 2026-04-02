@@ -5,14 +5,20 @@
 /** Account tier type - Pro or Ultra subscription level */
 export type AccountTier = "pro" | "ultra";
 
-/** Video generation mode - Quality (slower, better) or Fast */
-export type VideoMode = "quality" | "fast";
+/** Video generation mode - Quality (slower, better), Fast, or Lite (free tier) */
+export type VideoMode = "quality" | "fast" | "lite";
 
 /** Aspect ratio for media generation */
-export type AspectRatio = "16:9" | "9:16" | "1:1";
+export type AspectRatio = "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
 
 /** Image generation model */
 export type ImageModel = "nanobananapro" | "nanobanana2" | "imagen-4" | "imagen-4-fast" | "imagen-4-ultra";
+
+/** Image output size — triggers auto-upsample after generation */
+export type ImageSize = "2k" | "4k";
+
+/** Image quality (OpenAI-compatible) — maps to ImageSize for auto-upsample */
+export type ImageQuality = "low" | "standard" | "medium" | "high" | "hd" | "ultra";
 
 /** Video generation type */
 export type VideoGenerationType =
@@ -36,7 +42,9 @@ export type VideoAspectRatioEnum =
 export type ImageAspectRatioEnum =
   | "IMAGE_ASPECT_RATIO_LANDSCAPE"
   | "IMAGE_ASPECT_RATIO_PORTRAIT"
-  | "IMAGE_ASPECT_RATIO_SQUARE";
+  | "IMAGE_ASPECT_RATIO_SQUARE"
+  | "IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE"
+  | "IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR";
 
 /** Video resolution for upsampling */
 export type VideoResolution = "VIDEO_RESOLUTION_1080P" | "VIDEO_RESOLUTION_4K";

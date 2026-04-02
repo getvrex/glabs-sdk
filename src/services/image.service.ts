@@ -26,7 +26,30 @@ import {
   isRecaptchaEvaluationFailed,
   parseGoogleApiError,
 } from "../utils";
+import type { ImageQuality, ImageSize } from "../types/common";
 import type { RecaptchaService } from "./recaptcha.service";
+
+/** OpenAI quality → upsample resolution mapping */
+const QUALITY_TO_RESOLUTION: Record<string, string | undefined> = {
+  low: undefined,
+  standard: undefined,
+  medium: "UPSAMPLE_IMAGE_RESOLUTION_2K",
+  high: "UPSAMPLE_IMAGE_RESOLUTION_4K",
+  hd: "UPSAMPLE_IMAGE_RESOLUTION_4K",
+  ultra: "UPSAMPLE_IMAGE_RESOLUTION_4K",
+};
+
+/** Resolve upsample resolution from imageSize / quality options */
+function resolveUpsampleResolution(
+  imageSize?: ImageSize,
+  quality?: ImageQuality
+): string | undefined {
+  // imageSize takes priority over quality
+  if (imageSize === "4k") return "UPSAMPLE_IMAGE_RESOLUTION_4K";
+  if (imageSize === "2k") return "UPSAMPLE_IMAGE_RESOLUTION_2K";
+  if (quality) return QUALITY_TO_RESOLUTION[quality];
+  return undefined;
+}
 
 /** Regex to parse data URL format */
 const DATA_URL_REGEX = /^data:(.*?);base64,(.*)$/;
@@ -223,6 +246,8 @@ export class ImageService {
       count,
       model,
       prompts,
+      imageSize,
+      quality,
     } = options;
 
     // Require reCAPTCHA configuration
@@ -342,7 +367,15 @@ export class ImageService {
 
       if (response.ok) {
         const rawData = await response.json();
-        return this.parseImageResponse(rawData, prompt, sessionId);
+        const result = this.parseImageResponse(rawData, prompt, sessionId);
+
+        // Auto-upsample if imageSize or quality requested
+        const upsampleResolution = resolveUpsampleResolution(imageSize, quality);
+        if (upsampleResolution) {
+          await this.autoUpsampleImages(result, upsampleResolution, projectId, sessionId);
+        }
+
+        return result;
       }
 
       const errorData = await response.json().catch(() => ({}));
@@ -491,6 +524,50 @@ export class ImageService {
       `Image upsample failed after ${maxEvalRetries} reCAPTCHA attempts`,
       "RECAPTCHA_EVAL_FAILED"
     );
+  }
+
+  /**
+   * Auto-upsample generated images to requested resolution.
+   * Mutates the result in-place — replaces encodedImage and adds upsample metadata.
+   */
+  private async autoUpsampleImages(
+    result: GenerateImageResult,
+    targetResolution: string,
+    projectId: string,
+    sessionId: string
+  ): Promise<void> {
+    const resolutionLabel = targetResolution.includes("4K") ? "4K" : "2K";
+    this.logger.log(`[Image] Auto-upsampling ${result.images.length} image(s) to ${resolutionLabel}...`);
+
+    for (let i = 0; i < result.images.length; i++) {
+      const image = result.images[i]!;
+      const mediaId = image.mediaId;
+
+      if (!mediaId) {
+        this.logger.warn?.(`[Image] Skipping upsample for image ${i + 1}: no mediaId`);
+        continue;
+      }
+
+      try {
+        const upsampleResult = await this.upsampleImage({
+          mediaId,
+          targetResolution: targetResolution as "UPSAMPLE_IMAGE_RESOLUTION_2K" | "UPSAMPLE_IMAGE_RESOLUTION_4K",
+          projectId,
+          sessionId,
+        });
+
+        if (upsampleResult.encodedImage) {
+          image.encodedImage = upsampleResult.encodedImage;
+          image.upsampled = true;
+          image.upsampledResolution = resolutionLabel.toLowerCase();
+          this.logger.log(`[Image] Image ${i + 1} upsampled to ${resolutionLabel}`);
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn?.(`[Image] Upsample failed for image ${i + 1}: ${msg}`);
+        // Continue with original image — upsample failure is non-fatal
+      }
+    }
   }
 
   /**

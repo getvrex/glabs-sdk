@@ -71,6 +71,8 @@ export type ChromeRecaptchaOptions = {
   timeout?: number;
   /** Path for persistent browser profile (default: ~/.glabs-sdk/chrome-profile) */
   userDataDir?: string;
+  /** Post-token settlement delay in seconds (default: 3). Ensures enterprise request chain stability. */
+  settleSeconds?: number;
 };
 
 /** Result from reCAPTCHA token request */

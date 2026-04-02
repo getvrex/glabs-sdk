@@ -47,7 +47,7 @@ import type {
 
 const TIER_CAPABILITIES: TierCapabilitiesRecord = {
   pro: {
-    supportedVideoModes: ["quality", "fast"],
+    supportedVideoModes: ["quality", "fast", "lite"],
     defaultVideoMode: "fast",
     paygateTier: "PAYGATE_TIER_ONE",
     supportsUpsample: true,
@@ -55,7 +55,7 @@ const TIER_CAPABILITIES: TierCapabilitiesRecord = {
     maxImageGenerationCount: 4,
   },
   ultra: {
-    supportedVideoModes: ["quality", "fast"],
+    supportedVideoModes: ["quality", "fast", "lite"],
     defaultVideoMode: "fast",
     paygateTier: "PAYGATE_TIER_TWO",
     supportsUpsample: true,
@@ -80,6 +80,12 @@ const TEXT_TO_VIDEO_MODELS: VideoModelMapping = {
       "9:16": "veo_3_1_t2v_portrait",
       "1:1": "veo_3_1_t2v",
     },
+    // Lite model key has no orientation suffix — aspect ratio enum handles orientation
+    lite: {
+      "16:9": "veo_3_1_t2v_lite",
+      "9:16": "veo_3_1_t2v_lite",
+      "1:1": "veo_3_1_t2v_lite",
+    },
   },
   ultra: {
     fast: {
@@ -91,6 +97,12 @@ const TEXT_TO_VIDEO_MODELS: VideoModelMapping = {
       "16:9": "veo_3_1_t2v",
       "9:16": "veo_3_1_t2v_portrait",
       "1:1": "veo_3_1_t2v",
+    },
+    // Lite models are free-tier — no _ultra variant, no orientation suffix
+    lite: {
+      "16:9": "veo_3_1_t2v_lite",
+      "9:16": "veo_3_1_t2v_lite",
+      "1:1": "veo_3_1_t2v_lite",
     },
   },
 };
@@ -107,6 +119,12 @@ const IMAGE_TO_VIDEO_MODELS: VideoModelMapping = {
       "9:16": "veo_3_1_i2v_s_portrait",
       "1:1": "veo_3_1_i2v_s",
     },
+    // Lite model key has no orientation suffix — aspect ratio enum handles orientation
+    lite: {
+      "16:9": "veo_3_1_i2v_lite",
+      "9:16": "veo_3_1_i2v_lite",
+      "1:1": "veo_3_1_i2v_lite",
+    },
   },
   ultra: {
     fast: {
@@ -118,6 +136,12 @@ const IMAGE_TO_VIDEO_MODELS: VideoModelMapping = {
       "16:9": "veo_3_1_i2v_s",
       "9:16": "veo_3_1_i2v_s_portrait",
       "1:1": "veo_3_1_i2v_s",
+    },
+    // Lite models are free-tier — no _ultra variant, no orientation suffix
+    lite: {
+      "16:9": "veo_3_1_i2v_lite",
+      "9:16": "veo_3_1_i2v_lite",
+      "1:1": "veo_3_1_i2v_lite",
     },
   },
 };
@@ -134,6 +158,12 @@ const IMAGE_TO_VIDEO_FL_MODELS: VideoModelMapping = {
       "9:16": "veo_3_1_i2v_s_portrait_fl",
       "1:1": "veo_3_1_i2v_s_fl",
     },
+    // Interpolation lite: no orientation suffix — aspect ratio enum handles orientation
+    lite: {
+      "16:9": "veo_3_1_interpolation_lite",
+      "9:16": "veo_3_1_interpolation_lite",
+      "1:1": "veo_3_1_interpolation_lite",
+    },
   },
   ultra: {
     fast: {
@@ -145,6 +175,12 @@ const IMAGE_TO_VIDEO_FL_MODELS: VideoModelMapping = {
       "16:9": "veo_3_1_i2v_s_fl",
       "9:16": "veo_3_1_i2v_s_portrait_fl",
       "1:1": "veo_3_1_i2v_s_fl",
+    },
+    // Lite models are free-tier — no _ultra variant, no orientation suffix
+    lite: {
+      "16:9": "veo_3_1_interpolation_lite",
+      "9:16": "veo_3_1_interpolation_lite",
+      "1:1": "veo_3_1_interpolation_lite",
     },
   },
 };
@@ -180,6 +216,8 @@ const RESHOOT_VIDEO_MODELS: Record<AspectRatio, string> = {
   "16:9": "veo_3_0_reshoot_landscape",
   "9:16": "veo_3_0_reshoot_portrait",
   "1:1": "veo_3_0_reshoot_square",
+  "4:3": "veo_3_0_reshoot_landscape",
+  "3:4": "veo_3_0_reshoot_portrait",
 };
 
 const REFERENCE_IMAGES_VIDEO_MODELS: VideoModelMapping = {
@@ -266,6 +304,10 @@ export function getImageAspectRatioEnum(
       return "IMAGE_ASPECT_RATIO_PORTRAIT";
     case "1:1":
       return "IMAGE_ASPECT_RATIO_SQUARE";
+    case "4:3":
+      return "IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE";
+    case "3:4":
+      return "IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR";
     default:
       return "IMAGE_ASPECT_RATIO_LANDSCAPE";
   }
@@ -288,8 +330,12 @@ export function getVideoModelKey(
 
   if (type === "reference-images") {
     const effectiveMode = getEffectiveVideoMode(tier, videoMode);
-    const modelKey =
+    let modelKey =
       REFERENCE_IMAGES_VIDEO_MODELS[tier]?.[effectiveMode]?.[aspectRatio];
+    // Lite mode fallback: no lite variant for reference images, use fast
+    if (!modelKey && effectiveMode === "lite") {
+      modelKey = REFERENCE_IMAGES_VIDEO_MODELS[tier]?.["fast"]?.[aspectRatio];
+    }
     if (!modelKey) {
       throw new Error(
         `Reference images model config not found: tier=${tier}, mode=${effectiveMode}, aspect=${aspectRatio}`
@@ -318,7 +364,12 @@ export function getVideoModelKey(
       throw new Error(`Unknown video generation type: ${type}`);
   }
 
-  const modelKey = modelMapping[tier]?.[effectiveMode]?.[aspectRatio];
+  let modelKey = modelMapping[tier]?.[effectiveMode]?.[aspectRatio];
+
+  // Lite mode fallback: if no lite model exists for this type (e.g. extend, reshoot), use fast
+  if (!modelKey && effectiveMode === "lite") {
+    modelKey = modelMapping[tier]?.["fast"]?.[aspectRatio];
+  }
 
   if (!modelKey) {
     throw new Error(

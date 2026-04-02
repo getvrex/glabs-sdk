@@ -7,9 +7,17 @@
  * 1. Real Chrome binary — authentic GPU, WebGL, Canvas fingerprints
  * 2. Persistent profile — cookies/trust accumulate across requests
  * 3. Browser stays alive — faster subsequent tokens, consistent identity
+ * 4. Dual-host failover — recaptcha.net / google.com fallback
+ * 5. Settlement wait — post-token delay for enterprise request stability
+ * 6. Fingerprint extraction — real UA/sec-ch-ua from browser for API headers
  *
- * Based on community research (flow2api#68): real Chrome + persistent
- * context + ISP proxy achieves ~99% reCAPTCHA pass rate.
+ * Based on flow2api's browser_captcha.py pattern with improvements:
+ * - Dual reCAPTCHA host failover (proxy → recaptcha.net first, else google.com)
+ * - Settlement wait (configurable, default 3s)
+ * - Browser fingerprint extraction (UA, sec-ch-ua, language)
+ * - Consecutive failure recycling (≥2 fails → recycle browser)
+ * - Request-failed event monitoring for reCAPTCHA resources
+ * - Extended stealth Chrome flags
  */
 
 import { RECAPTCHA_CONFIG } from "../constants";
@@ -28,6 +36,9 @@ export class ChromeRecaptchaService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private pw: any = null;
   private launching: Promise<void> | null = null;
+  private consecutiveFailures = 0;
+  /** Whether a proxy is active (switches primary reCAPTCHA host) */
+  private proxyActive = false;
 
   constructor(options: ChromeRecaptchaServiceOptions = {}) {
     this.logger = options.logger ?? console;
@@ -40,13 +51,14 @@ export class ChromeRecaptchaService {
     options: ChromeRecaptchaOptions = {},
     pageAction?: string
   ): Promise<RecaptchaTokenResult> {
-    const { maxRetries = 3, timeout = 30000, projectId } = options;
+    const { maxRetries = 3, timeout = 30000 } = options;
     const effectiveAction = pageAction ?? RECAPTCHA_CONFIG.PAGE_ACTION;
     const websiteKey = RECAPTCHA_CONFIG.WEBSITE_KEY;
-    const pageUrl = projectId
-      ? `https://labs.google/fx/tools/flow/project/${projectId}`
-      : RECAPTCHA_CONFIG.WEBSITE_URL;
+    // Use a lightweight API endpoint as page context (from flow2api) —
+    // avoids loading the full app while still providing the correct origin
+    const pageUrl = "https://labs.google/fx/api/auth/providers";
 
+    this.proxyActive = !!options.proxy;
     await this.ensureBrowser(options);
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -65,7 +77,36 @@ export class ChromeRecaptchaService {
           "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
         );
 
-        // Intercept routes — serve minimal HTML with reCAPTCHA script,
+        // Dual-host failover: use recaptcha.net first when behind proxy (better connectivity),
+        // otherwise use google.com first (higher trust). Falls back to the other on script load error.
+        const primaryHost = this.proxyActive
+          ? "https://www.recaptcha.net"
+          : "https://www.google.com";
+        const secondaryHost = this.proxyActive
+          ? "https://www.google.com"
+          : "https://www.recaptcha.net";
+
+        // Monitor failed requests for reCAPTCHA resources
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        page.on("requestfailed", (request: any) => {
+          try {
+            const failedUrl: string = request.url() ?? "";
+            if (
+              failedUrl.includes("google.com") ||
+              failedUrl.includes("gstatic.com") ||
+              failedUrl.includes("recaptcha.net")
+            ) {
+              const failure = request.failure()?.errorText ?? "unknown";
+              this.logger.warn?.(
+                `[reCAPTCHA:Chrome] Resource load failed: ${failedUrl.substring(0, 200)} (${failure})`
+              );
+            }
+          } catch {
+            // Ignore monitoring errors
+          }
+        });
+
+        // Intercept routes — serve minimal HTML with dual-host reCAPTCHA script failover,
         // allow Google infrastructure, block everything else
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await page.route("**/*", async (route: any) => {
@@ -75,10 +116,27 @@ export class ChromeRecaptchaService {
             url.replace(/\/$/, "") === pageUrl.replace(/\/$/, "") ||
             url.startsWith(pageUrl)
           ) {
+            // Serve HTML with dual-host failover script loading (from flow2api)
             await route.fulfill({
               status: 200,
               contentType: "text/html",
-              body: `<html><head><script src="https://www.google.com/recaptcha/enterprise.js?render=${websiteKey}"></script></head><body></body></html>`,
+              body: `<html><head><script>
+(() => {
+  const urls = [
+    '${primaryHost}/recaptcha/enterprise.js?render=${websiteKey}',
+    '${secondaryHost}/recaptcha/enterprise.js?render=${websiteKey}'
+  ];
+  const loadScript = (index) => {
+    if (index >= urls.length) return;
+    const script = document.createElement('script');
+    script.src = urls[index];
+    script.async = true;
+    script.onerror = () => loadScript(index + 1);
+    document.head.appendChild(script);
+  };
+  loadScript(0);
+})();
+</script></head><body></body></html>`,
             });
           } else if (
             url.includes("google.com") ||
@@ -94,8 +152,11 @@ export class ChromeRecaptchaService {
         await page.goto(pageUrl, { waitUntil: "load", timeout });
 
         await page.waitForFunction("typeof grecaptcha !== 'undefined'", {
-          timeout: 15000,
+          timeout: 10000,
         });
+
+        // Extract real browser fingerprint before executing reCAPTCHA
+        const fingerprint = await this.capturePageFingerprint(page);
 
         // Execute reCAPTCHA with timeout wrapper
         const token = await page.evaluate(
@@ -123,10 +184,26 @@ export class ChromeRecaptchaService {
         );
 
         if (token && typeof token === "string") {
+          // Settlement wait: post-token delay for enterprise request chain stability (from flow2api)
+          const settleSeconds = options.settleSeconds ?? 3;
+          if (settleSeconds > 0) {
+            this.logger.log(
+              `[reCAPTCHA:Chrome] Token obtained, settling for ${settleSeconds}s...`
+            );
+            await new Promise((r) => setTimeout(r, settleSeconds * 1000));
+          }
+
           this.logger.log(
             `[reCAPTCHA:Chrome] Token obtained: ${token.substring(0, 50)}...`
           );
-          return { token };
+
+          this.consecutiveFailures = 0;
+
+          return {
+            token,
+            userAgent: fingerprint?.userAgent,
+            secChUa: fingerprint?.secChUa,
+          };
         }
 
         throw new Error(
@@ -134,18 +211,24 @@ export class ChromeRecaptchaService {
         );
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        this.logger.warn(
+        this.logger.warn?.(
           `[reCAPTCHA:Chrome] Attempt ${attempt} failed: ${msg}`
         );
 
+        this.consecutiveFailures++;
+
         // If browser context is broken, reset it for next attempt
-        if (
+        const isBrowserDead =
           msg.includes("Target closed") ||
           msg.includes("Browser closed") ||
-          msg.includes("Connection closed")
-        ) {
-          this.logger.warn(
-            "[reCAPTCHA:Chrome] Browser connection lost, will relaunch..."
+          msg.includes("Connection closed") ||
+          msg.includes("crash");
+
+        // Recycle on browser death OR consecutive failures ≥ 2 (from flow2api)
+        if (isBrowserDead || this.consecutiveFailures >= 2) {
+          const reason = isBrowserDead ? "browser_dead" : `consecutive_failures_${this.consecutiveFailures}`;
+          this.logger.warn?.(
+            `[reCAPTCHA:Chrome] Recycling browser (reason: ${reason})...`
           );
           await this.closeBrowser();
           if (attempt < maxRetries) {
@@ -172,6 +255,39 @@ export class ChromeRecaptchaService {
       "Chrome reCAPTCHA failed unexpectedly",
       "RECAPTCHA_FAILED"
     );
+  }
+
+  /**
+   * Extract real browser fingerprint (UA, sec-ch-ua, language) from the page.
+   * Returns the fingerprint the browser actually exposes — ensures API headers
+   * match the browser identity used during reCAPTCHA solving.
+   */
+  private async capturePageFingerprint(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    page: any
+  ): Promise<{ userAgent?: string; secChUa?: string; language?: string } | null> {
+    try {
+      const fingerprint = await page.evaluate(`
+        (() => {
+          const ua = navigator.userAgent || "";
+          const lang = navigator.language || "";
+          const uaData = navigator.userAgentData || null;
+          let secChUa = "";
+
+          if (uaData && Array.isArray(uaData.brands) && uaData.brands.length > 0) {
+            secChUa = uaData.brands
+              .map((item) => '"' + item.brand + '";v="' + item.version + '"')
+              .join(", ");
+          }
+
+          return { userAgent: ua, secChUa, language: lang };
+        })()
+      `);
+
+      return fingerprint && typeof fingerprint === "object" ? fingerprint : null;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -220,6 +336,26 @@ export class ChromeRecaptchaService {
       userDataDir ?? join(homedir(), ".glabs-sdk", "chrome-profile");
     mkdirSync(profileDir, { recursive: true });
 
+    // Extended stealth Chrome flags (from flow2api)
+    const stealthArgs = [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-quic",
+      "--disable-features=UseDnsHttpsSvcb",
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-setuid-sandbox",
+      "--no-first-run",
+      "--no-zygote",
+      "--disable-infobars",
+      "--hide-scrollbars",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-sync",
+      "--disable-translate",
+      "--disable-default-apps",
+      "--no-default-browser-check",
+    ];
+
     // Try real Chrome first, fall back to bundled Chromium
     let channel: string | undefined = "chrome";
     try {
@@ -231,14 +367,11 @@ export class ChromeRecaptchaService {
         {
           channel,
           headless,
-          args: [
-            "--disable-blink-features=AutomationControlled",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-infobars",
-          ],
+          args: stealthArgs,
           viewport: { width: 1920, height: 1080 },
-          userAgent: getStableUserAgent(),
+          locale: "en-US",
+          // Do NOT set userAgent — let Chrome use its own authentic UA to avoid
+          // UA/sec-ch-ua mismatch that tanks reCAPTCHA scores (from flow2api)
           ignoreDefaultArgs: ["--enable-automation"],
           ...(proxy ? { proxy } : {}),
         }
@@ -246,7 +379,7 @@ export class ChromeRecaptchaService {
     } catch (launchError) {
       const msg =
         launchError instanceof Error ? launchError.message : String(launchError);
-      this.logger.warn(
+      this.logger.warn?.(
         `[reCAPTCHA:Chrome] System Chrome not available (${msg}), falling back to Chromium...`
       );
       channel = undefined;
@@ -254,20 +387,16 @@ export class ChromeRecaptchaService {
         profileDir + "-chromium",
         {
           headless,
-          args: [
-            "--disable-blink-features=AutomationControlled",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-infobars",
-          ],
+          args: stealthArgs,
           viewport: { width: 1920, height: 1080 },
-          userAgent: getStableUserAgent(),
+          locale: "en-US",
           ignoreDefaultArgs: ["--enable-automation"],
           ...(proxy ? { proxy } : {}),
         }
       );
     }
 
+    this.consecutiveFailures = 0;
     this.logger.log(
       `[reCAPTCHA:Chrome] Browser launched (channel=${channel ?? "chromium"})`
     );
@@ -291,17 +420,3 @@ export class ChromeRecaptchaService {
   }
 }
 
-/**
- * Stable user agent based on current platform.
- * Persistent profiles should use a consistent UA (not random).
- */
-function getStableUserAgent(): string {
-  const platform = process.platform;
-  if (platform === "darwin") {
-    return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
-  }
-  if (platform === "linux") {
-    return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
-  }
-  return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
-}

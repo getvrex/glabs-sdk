@@ -20,6 +20,8 @@ export type {
   ClientContext,
   ImageAspectRatioEnum,
   ImageModel,
+  ImageQuality,
+  ImageSize,
   PaygateTier,
   ReshootMotionType,
   VideoAspectRatioEnum,
