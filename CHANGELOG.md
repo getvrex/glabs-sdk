@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/getvrex/glabs-sdk/compare/v2.2.4...v2.3.0) (2026-04-02)
+
+
+### Features
+
+* add image quality/size options, 4:3/3:4 aspect ratios, veo 3.1 lite models, and improved chrome captcha ([c320011](https://github.com/getvrex/glabs-sdk/commit/c32001197fa4686659b475e0afa708e86993ad4e))
+
+
+### Bug Fixes
+
+* include raw error details in video operation error messages ([3703cfb](https://github.com/getvrex/glabs-sdk/commit/3703cfbe334de83f4ce5d2316e0048ddc0c827fc))
+
 ## [2.2.4](https://github.com/getvrex/glabs-sdk/compare/v2.2.3...v2.2.4) (2026-03-15)
 
 
